@@ -1,0 +1,57 @@
+@use '../mixins';
+
+.login {
+  display: grid;
+  place-items: center;
+  min-height: 100vh;
+  padding: var(--space-5);
+  background:
+    radial-gradient(60rem 30rem at 50% -10%, var(--accent-soft), transparent 70%),
+    var(--bg);
+
+  &__card {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-5);
+    width: min(24rem, 100%);
+    padding: var(--space-6);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+
+    @include mixins.narrow {
+      padding: var(--space-5);
+    }
+  }
+
+  &__brand {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-3);
+    text-align: center;
+  }
+
+  &__logo {
+    display: grid;
+    place-items: center;
+    width: 3rem;
+    height: 3rem;
+    color: var(--accent-contrast);
+    background: var(--accent);
+    border-radius: var(--radius-lg);
+    box-shadow: 0 6px 18px hsl(var(--accent-h) var(--accent-s) var(--accent-l) / 0.35);
+
+    svg {
+      width: 1.5rem;
+      height: 1.5rem;
+    }
+  }
+
+  &__form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+  }
+}

@@ -1,0 +1,98 @@
+@use '../mixins';
+
+.c-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+
+  &__label {
+    font-size: var(--text-sm);
+    font-weight: var(--weight-medium);
+  }
+
+  &__input {
+    width: 100%;
+    min-height: var(--control-height);
+    padding: 0 var(--space-3);
+    background: var(--surface);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-md);
+    transition:
+      border-color var(--duration) var(--ease),
+      box-shadow var(--duration) var(--ease);
+
+    &::placeholder {
+      color: var(--text-faint);
+    }
+
+    &:hover {
+      border-color: var(--text-faint);
+    }
+
+    &:focus {
+      @include mixins.control-focus;
+    }
+  }
+
+  // A <textarea>: it needs room above and below the text, and may grow downwards.
+  &__input--multiline {
+    min-height: 5rem;
+    padding: var(--space-3);
+    line-height: var(--leading-normal);
+    resize: vertical;
+  }
+
+  // A value that is shown but cannot be changed.
+  &__input[readonly] {
+    color: var(--text-muted);
+    background: var(--surface-muted);
+    cursor: default;
+
+    &:hover {
+      border-color: var(--border-strong);
+    }
+  }
+
+  &__hint,
+  &__error {
+    font-size: var(--text-xs);
+  }
+
+  &__hint {
+    color: var(--text-muted);
+  }
+
+  &__error {
+    color: var(--danger);
+  }
+
+  &.has-error &__input {
+    border-color: var(--danger);
+
+    &:focus {
+      box-shadow: 0 0 0 3px var(--danger-soft);
+    }
+  }
+}
+
+// A message box shown above a form (a failed login, for instance).
+.c-alert {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  font-size: var(--text-sm);
+  border-radius: var(--radius-md);
+
+  svg {
+    flex: none;
+    width: 1.0625rem;
+    height: 1.0625rem;
+    margin-top: 0.1rem;
+  }
+
+  &--error {
+    color: var(--danger);
+    background: var(--danger-soft);
+  }
+}

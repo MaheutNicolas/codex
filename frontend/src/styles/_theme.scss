@@ -1,0 +1,196 @@
+// =============================================================================
+//  THEME: the one and only file to edit to change the look of the app.
+//
+//  Quick tests:
+//   - Another accent color: change --accent-h (0-360) in :root, or pick one of the
+//     presets from the "Apparence" menu of the app (they are the [data-accent] blocks below).
+//   - Rounder / sharper corners: change the --radius-* values.
+//   - Denser / airier layout: change the --space-* scale.
+//   - Neutral greys: --neutral-s is their saturation (0% = pure grey, 10% = tinted by the accent).
+//   - Light and dark palettes: the two mixins below.
+//
+//  Every other stylesheet only reads these variables. Nothing else holds a color.
+// =============================================================================
+
+// Media queries cannot read CSS variables, so the breakpoints are the one exception.
+$bp-md: 56rem; // below: the sidebar becomes a drawer
+$bp-sm: 36rem; // below: tighter paddings
+
+:root {
+  // ---- Accent: hue and saturation of the main color --------------------------
+  --accent-h: 245;
+  --accent-s: 72%;
+  --accent-l: 56%; // lightness in the light theme
+  --accent-l-dark: 68%; // lightness in the dark theme
+  --neutral-s: 10%;
+
+  // ---- Typography -------------------------------------------------------------
+  --font-sans: 'Inter Variable', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: ui-monospace, 'Cascadia Code', 'SF Mono', Consolas, monospace;
+
+  --text-xs: 0.75rem;
+  --text-sm: 0.8125rem;
+  --text-base: 0.9375rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.5rem;
+  --text-2xl: 2rem;
+
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+
+  --leading-tight: 1.25;
+  --leading-normal: 1.55;
+
+  // ---- Spacing (8px grid) -----------------------------------------------------
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-7: 3rem;
+  --space-8: 4rem;
+
+  // ---- Shape ------------------------------------------------------------------
+  --radius-sm: 0.375rem;
+  --radius-md: 0.625rem;
+  --radius-lg: 0.875rem;
+  --radius-full: 999px;
+
+  // ---- Layout -----------------------------------------------------------------
+  --sidebar-width: 15.5rem;
+  --content-width: 66rem;
+  --control-height: 2.5rem;
+
+  // ---- Motion -----------------------------------------------------------------
+  --duration: 150ms;
+  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+
+  // ---- Stacking ---------------------------------------------------------------
+  --z-sidebar: 20;
+  --z-menu: 30;
+  --z-dialog: 40;
+  --z-toast: 50;
+}
+
+// ---- Accent presets (chosen from the "Apparence" menu) ---------------------------
+// Each one only changes the hue (and a little saturation / lightness for readability).
+// They work on any element: the color samples of the menu carry their own data-accent.
+[data-accent='indigo'] {
+  --accent-h: 245;
+  --accent-s: 72%;
+  --accent-l: 56%;
+}
+[data-accent='teal'] {
+  --accent-h: 178;
+  --accent-s: 78%;
+  --accent-l: 34%;
+}
+[data-accent='green'] {
+  --accent-h: 150;
+  --accent-s: 64%;
+  --accent-l: 35%;
+}
+[data-accent='amber'] {
+  --accent-h: 30;
+  --accent-s: 92%;
+  --accent-l: 42%;
+}
+[data-accent='rose'] {
+  --accent-h: 342;
+  --accent-s: 74%;
+  --accent-l: 52%;
+}
+
+// ---- Light palette ---------------------------------------------------------------
+@mixin palette-light {
+  color-scheme: light;
+
+  --bg: hsl(var(--accent-h) var(--neutral-s) 97.5%);
+  --surface: hsl(0 0% 100%);
+  --surface-muted: hsl(var(--accent-h) var(--neutral-s) 95%);
+  --surface-hover: hsl(var(--accent-h) var(--neutral-s) 92.5%);
+  --sidebar-bg: hsl(var(--accent-h) var(--neutral-s) 96%);
+
+  --border: hsl(var(--accent-h) 12% 90%);
+  --border-strong: hsl(var(--accent-h) 10% 80%);
+
+  --text: hsl(var(--accent-h) 22% 12%);
+  --text-muted: hsl(var(--accent-h) 8% 40%);
+  --text-faint: hsl(var(--accent-h) 8% 56%);
+
+  --accent: hsl(var(--accent-h) var(--accent-s) var(--accent-l));
+  --accent-hover: hsl(var(--accent-h) var(--accent-s) calc(var(--accent-l) - 7%));
+  --accent-soft: hsl(var(--accent-h) 85% 96%);
+  --accent-soft-text: hsl(var(--accent-h) 65% 34%);
+  --accent-contrast: hsl(0 0% 100%);
+
+  --success: hsl(152 62% 32%);
+  --success-soft: hsl(152 55% 93%);
+  --warning: hsl(34 90% 36%);
+  --warning-soft: hsl(40 95% 91%);
+  --danger: hsl(0 70% 46%);
+  --danger-soft: hsl(0 85% 96%);
+
+  --shadow-sm: 0 1px 2px hsl(var(--accent-h) 30% 20% / 0.06);
+  --shadow-md: 0 4px 16px hsl(var(--accent-h) 30% 20% / 0.08), 0 1px 3px hsl(var(--accent-h) 30% 20% / 0.06);
+  --shadow-lg: 0 20px 50px hsl(var(--accent-h) 30% 15% / 0.18), 0 4px 12px hsl(var(--accent-h) 30% 15% / 0.08);
+
+  --focus: hsl(var(--accent-h) var(--accent-s) var(--accent-l) / 0.55);
+  --overlay: hsl(var(--accent-h) 30% 10% / 0.45);
+}
+
+// ---- Dark palette ----------------------------------------------------------------
+@mixin palette-dark {
+  color-scheme: dark;
+
+  --bg: hsl(var(--accent-h) 14% 8%);
+  --surface: hsl(var(--accent-h) 14% 11.5%);
+  --surface-muted: hsl(var(--accent-h) 14% 14%);
+  --surface-hover: hsl(var(--accent-h) 14% 17%);
+  --sidebar-bg: hsl(var(--accent-h) 14% 10%);
+
+  --border: hsl(var(--accent-h) 12% 19%);
+  --border-strong: hsl(var(--accent-h) 10% 28%);
+
+  --text: hsl(var(--accent-h) 18% 94%);
+  --text-muted: hsl(var(--accent-h) 8% 68%);
+  --text-faint: hsl(var(--accent-h) 8% 50%);
+
+  --accent: hsl(var(--accent-h) var(--accent-s) var(--accent-l-dark));
+  --accent-hover: hsl(var(--accent-h) var(--accent-s) calc(var(--accent-l-dark) + 6%));
+  --accent-soft: hsl(var(--accent-h) 40% 18%);
+  --accent-soft-text: hsl(var(--accent-h) 85% 80%);
+  --accent-contrast: hsl(var(--accent-h) 40% 8%);
+
+  --success: hsl(152 55% 56%);
+  --success-soft: hsl(152 35% 15%);
+  --warning: hsl(38 90% 60%);
+  --warning-soft: hsl(38 40% 15%);
+  --danger: hsl(0 85% 68%);
+  --danger-soft: hsl(0 40% 16%);
+
+  --shadow-sm: 0 1px 2px hsl(0 0% 0% / 0.4);
+  --shadow-md: 0 4px 16px hsl(0 0% 0% / 0.4), 0 1px 3px hsl(0 0% 0% / 0.3);
+  --shadow-lg: 0 20px 50px hsl(0 0% 0% / 0.6), 0 4px 12px hsl(0 0% 0% / 0.4);
+
+  --focus: hsl(var(--accent-h) var(--accent-s) var(--accent-l-dark) / 0.6);
+  --overlay: hsl(0 0% 0% / 0.6);
+}
+
+:root {
+  @include palette-light;
+}
+
+// Forced from the "Apparence" menu...
+:root[data-theme='dark'] {
+  @include palette-dark;
+}
+
+// ...or following the system when nothing was forced.
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    @include palette-dark;
+  }
+}

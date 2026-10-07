@@ -7,7 +7,7 @@ Bibliothèque narrative pour l'écriture d'un livre : elle stocke les connaissan
 | Dossier | Contenu |
 |---|---|
 | `backend/` | API Symfony (PHP, Doctrine, MySQL). Toutes les commandes `php bin/console` et `composer` se lancent depuis ce dossier. |
-| `frontend/` | Application Vue (étape 3), qui communique avec l'API. |
+| `frontend/` | Application Vue 3 (Vite, SCSS, JavaScript) qui communique avec l'API. Les commandes `npm` se lancent depuis ce dossier. |
 
 Les chemins `src/`, `config/` et `migrations/` cités plus bas sont ceux de `backend/`.
 
@@ -30,6 +30,7 @@ Paquets installés : `symfony/orm-pack`, `symfony/serializer`, `symfony/validato
 4. `php bin/console doctrine:database:create --if-not-exists`
 5. `php bin/console doctrine:migrations:migrate`
 6. `php bin/console app:user:create <identifiant>` pour créer son compte (demande le mot de passe), puis éventuellement `php bin/console app:seed <identifiant>` pour un livre d'exemple.
+7. Frontend : voir « Lancer en développement » à l'étape 3 (`cd frontend`, `npm install`, `npm run dev`).
 
 **InnoDB obligatoire** : le MySQL de WAMP crée les tables en MyISAM par défaut, qui ignore les clés étrangères et `ON DELETE CASCADE`. `default_table_options: engine: InnoDB` est donc forcé dans `config/packages/doctrine.yaml`.
 
@@ -161,7 +162,7 @@ Préfixe `/api`, JSON uniquement. `{bookId}` est l'identifiant numérique du liv
   - events : `chapter`, `revealed` (tri par `worldOrder`)
   - event-participants : `eventId`, `knowledgeId`, `role`
   - réponse : `{ "data": [...], "total": n, "limit": n, "offset": n }`
-- Les collections ne lisent que les colonnes courtes (requêtes en tableau, sans hydrater d'entités) : `id`, `name`, `type`, `summary` pour knowledge ; `id`, `title`, `summary`, `worldOrder`, `worldDate`, `chapter`, `revealed` pour events. `description` et `detail` ne sortent qu'avec le `GET` d'un élément.
+- Les collections ne lisent que les colonnes courtes (requêtes en tableau, sans hydrater d'entités) : `id`, `name`, `type`, `summary`, `aliases` pour knowledge ; `id`, `title`, `summary`, `worldOrder`, `worldDate`, `chapter`, `revealed` pour events. `description` et `detail` ne sortent qu'avec le `GET` d'un élément.
 - `POST` et `PATCH` refusent les champs inconnus ou du mauvais type (`VALIDATION_FAILED`, tous les champs fautifs d'un coup). `id` n'est accepté qu'à la création. Pour un participant, `POST` prend `{eventId, knowledgeId, role}` et `PATCH` ne modifie que `role`.
 - Supprimer une connaissance ou un événement supprime ses liens de participation (`ON DELETE CASCADE` en base).
 - `GET` élément, `POST` (201), `PATCH` (mise à jour partielle), `DELETE` (204)
@@ -247,10 +248,53 @@ Décisions prises :
 
 **À savoir** : le header `X-API-Key` fait partie des en-têtes CORS autorisés, avec `allow_credentials` pour les cookies. Les clés d'API nécessitent un corps UTF-8 ; depuis un terminal Windows, `curl.exe` déforme les accents passés en argument (`-d`) : envoyer le corps depuis un fichier (`--data-binary @fichier.json`).
 
-### Étape 3 : application Vue
+### Étape 3 : application Vue (en cours)
 
-- **Pile** : Vue 3, Vite, Vue Router, Pinia, Tailwind. Dossier `app/` du dépôt. L'app construite est servie par nginx sur le même domaine que l'API (`/` pour l'app, `/api` pour PHP), donc sans CORS en production.
-- **Écrans** : connexion ; choix et création de livre ; bibliothèque (liste filtrable par type, recherche par nom ou alias) ; fiche en édition ; chronologie triée par `worldOrder` ; édition d'événement avec sélecteur de participants alimenté par `/index` ; clés d'API (création, copie unique, révocation, URL MCP prête à copier) ; **import en masse**.
+**Décisions** : Vue 3 + Vite + Vue Router, en **JavaScript** (pas de TypeScript), **sans Pinia** (l'état partagé tient dans des composables), **sans bibliothèque de composants ni Tailwind** : les styles sont des fichiers SCSS compilés en **un seul fichier CSS**, avec un design épuré, un thème clair et un thème sombre. Tous les textes affichés sont dans un seul fichier de langue.
+
+**Fait** : projet et outillage, client d'API, connexion (avec redirection vers la page demandée, session qui survit au rechargement), liste des livres (créer, renommer, supprimer avec confirmation), coque de l'application (barre latérale, tiroir sur mobile), menu d'apparence (mode et couleur), notifications, **bibliothèque** (voir ci-dessous). Les sections Chronologie et Clés d'API affichent pour l'instant une page « Bientôt disponible ».
+
+**Reste** : chronologie (événements, participants, sélecteur alimenté par l'index), clés d'API (création, copie unique, suppression, URL MCP), import en masse (avec les deux routes du backend décrites plus bas).
+
+**Bibliothèque** (`views/LibraryView.vue`, `components/library/KnowledgePanel.vue`) :
+- **Liste** : toutes les fiches du livre (nom, type, alias, résumé), triées par nom, chargées d'un coup (par pages de 200 si besoin). La liste de l'API renvoie les alias pour permettre la recherche.
+- **Recherche** instantanée, côté navigateur, **sans tenir compte des accents ni de la casse** (« resonance » trouve « La Résonance »). Elle porte sur le nom, les alias, l'identifiant et le résumé ; les résultats sont classés (nom qui commence par la recherche, nom qui la contient, alias, reste). Les touches `/` et `Ctrl+K` placent le curseur dans la recherche.
+- **Filtres par type** (Personnages, Lieux, Systèmes) avec le nombre de fiches de chaque type.
+- **Panneau latéral** pour créer ou modifier une fiche, piloté par l'adresse : `?entry=aldric` ouvre une fiche, `?new` ouvre la création, donc un lien direct ou le bouton « précédent » fonctionnent. Champs : nom, type, identifiant, résumé, description, alias (étiquettes : Entrée ou virgule pour ajouter, Retour arrière pour retirer, doublons ignorés).
+- **Identifiant** : à la création il se déduit du nom (« Citadelle du Nord » donne `citadelle-du-nord`) tant qu'on ne l'a pas modifié à la main ; il est en lecture seule ensuite. « Enregistrer et créer une autre » enchaîne les saisies sans fermer le panneau.
+- **Validation** en français dans le navigateur (champs obligatoires, format de l'identifiant) ; erreur effacée dès que le champ est modifié ; identifiant déjà pris signalé sous le champ.
+- **Rien n'est perdu sans prévenir** : fermer le panneau avec des modifications non enregistrées (Échap, clic à côté, croix, Annuler) demande confirmation ; la suppression aussi. Dans les confirmations, le bouton le moins destructeur a le focus.
+
+**Lancer en développement** (deux terminaux) :
+- `cd backend` puis `symfony serve` (ou `php -S 127.0.0.1:8000 -t public`) ;
+- `cd frontend` puis `npm install` (la première fois) et `npm run dev`, puis ouvrir http://localhost:5173.
+
+Vite redirige `/api` et `/health` vers le backend (`vite.config.js`) : l'app et l'API partagent la même origine, comme en production derrière nginx, donc le cookie de session fonctionne sans configuration CORS. `npm run build` produit `frontend/dist/` (un seul fichier CSS, des fichiers JS par page), à servir par nginx sur `/` avec `/api` envoyé à PHP-FPM.
+
+**Organisation de `frontend/src/`** :
+
+| Dossier | Rôle |
+|---|---|
+| `styles/` | SCSS : `main.scss` (point d'entrée, ordre des imports), `_theme.scss` (**tout le thème**), `_mixins.scss`, `base/`, `layout/`, `components/`, `pages/` |
+| `locales/` | `fr.js` : **tous les textes affichés**, y compris un message par code d'erreur de l'API ; `t('books.title')` les lit |
+| `api/` | `client.js` (appels `fetch`, erreurs de l'API transformées en `ApiError`, session expirée gérée) et un fichier par ressource |
+| `composables/` | état partagé sans Pinia : `useAuth`, `useBook`, `useTheme`, `useToast` |
+| `components/ui/` | éléments de base : `UiButton`, `UiField` (champ ou zone de texte), `UiSelect`, `UiTagInput`, `UiDialog` (fenêtre ou panneau latéral ; il ne se ferme jamais seul, il demande à être fermé avec l'événement `dismiss`), `ToastHost` |
+| `components/library/` | composants propres à la bibliothèque (`KnowledgePanel`) |
+| `components/layout/` | `AppShell`, `AppSidebar`, `ThemeMenu` |
+| `views/` | une page par route |
+| `constants.js`, `utils/` | types de fiches et leurs icônes (à tenir d'accord avec `Knowledge::TYPES` du backend), formatage de dates, fonctions de texte (`normalize`, `slugify`) |
+| `router.js` | routes et garde de connexion |
+
+**Styles** : fichiers SCSS globaux, nommés en BEM avec préfixe (`.c-button--primary`, `.sidebar__link`), jamais de style dans les composants Vue. Aucun fichier SCSS ne contient de couleur : ils lisent des variables CSS.
+
+**Changer l'apparence** : tout est dans `frontend/src/styles/_theme.scss`. Changer `--accent-h` (la teinte, de 0 à 360) change la couleur de toute l'app ; les valeurs `--radius-*` changent les arrondis, `--space-*` la densité, et les deux mixins `palette-light` et `palette-dark` les couleurs de chaque mode. Les cinq couleurs proposées dans le menu « Apparence » (indigo, sarcelle, vert, ambre, rose) sont les blocs `[data-accent]` du même fichier. Le choix est mémorisé dans le navigateur.
+
+**Textes** : français uniquement, dans `locales/fr.js`. Les messages de validation renvoyés par l'API pour un champ sont en anglais (règle du code) : l'interface affiche le message français du code d'erreur (`VALIDATION_FAILED`), pas le détail du champ.
+
+**Vérification** : l'interface a été testée dans un vrai navigateur (Edge sans fenêtre, piloté par script) : connexion échouée puis réussie, création, renommage et suppression de livres, erreurs de formulaire, menu d'apparence, modes clair et sombre, les cinq couleurs, mobile avec tiroir, persistance après rechargement, déconnexion. Ces scripts jetables ne sont pas dans le dépôt.
+
+**Écrans prévus** : bibliothèque (liste filtrable par type, recherche par nom ou alias), fiche en édition, chronologie triée par `worldOrder`, édition d'événement avec sélecteur de participants alimenté par `/index`, clés d'API (création, copie unique, suppression, URL MCP prête à copier), **import en masse**.
 
 **Import en masse** (pour le JSON généré par ChatGPT) :
 1. **Consignes** : un encadré avec un bouton « Copier » donne à coller dans ChatGPT le texte à suivre. Il est généré par le serveur (`GET /api/books/{bookId}/import/instructions`) : rôle demandé, format JSON exact, règles (slugs en minuscules avec tirets, types autorisés, `worldOrder` entier, résumés de 2-3 phrases) et **la liste des slugs déjà présents** pour que l'IA les réutilise sans créer de doublons.

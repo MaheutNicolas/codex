@@ -1,0 +1,33 @@
+@use '../mixins';
+
+.page {
+  max-width: var(--content-width);
+  margin: 0 auto;
+  padding: var(--space-7) var(--space-6);
+
+  &__header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: var(--space-4);
+    margin-bottom: var(--space-6);
+  }
+
+  &__title {
+    font-size: var(--text-2xl);
+  }
+
+  &__subtitle {
+    max-width: 38rem;
+    margin-top: var(--space-2);
+  }
+
+  @include mixins.narrow {
+    padding: var(--space-5) var(--space-4);
+
+    &__title {
+      font-size: var(--text-xl);
+    }
+  }
+}

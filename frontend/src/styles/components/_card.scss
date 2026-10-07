@@ -1,0 +1,77 @@
+.c-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-5);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+
+  // A card that is a link: the title's link stretches over the whole card.
+  &--interactive {
+    transition:
+      border-color var(--duration) var(--ease),
+      box-shadow var(--duration) var(--ease),
+      transform var(--duration) var(--ease);
+
+    &:hover,
+    &:focus-within {
+      border-color: var(--border-strong);
+      box-shadow: var(--shadow-md);
+      transform: translateY(-1px);
+    }
+  }
+
+  &__title {
+    font-size: var(--text-base);
+    font-weight: var(--weight-semibold);
+    line-height: var(--leading-tight);
+    overflow-wrap: anywhere;
+
+    a::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+    }
+
+    a:focus-visible {
+      outline: none;
+
+      &::after {
+        outline: 2px solid var(--focus);
+        outline-offset: 2px;
+      }
+    }
+  }
+
+  &__meta {
+    color: var(--text-faint);
+    font-size: var(--text-xs);
+  }
+
+  // Buttons sit above the stretched link.
+  &__actions {
+    position: absolute;
+    top: var(--space-3);
+    right: var(--space-3);
+    display: flex;
+    gap: var(--space-1);
+    opacity: 0;
+    transition: opacity var(--duration) var(--ease);
+  }
+
+  &:hover &__actions,
+  &:focus-within &__actions {
+    opacity: 1;
+  }
+
+  // Touch screens have no hover: the actions stay visible.
+  @media (hover: none) {
+    &__actions {
+      opacity: 1;
+    }
+  }
+}

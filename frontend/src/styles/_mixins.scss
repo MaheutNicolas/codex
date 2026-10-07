@@ -1,0 +1,29 @@
+@use 'theme';
+
+// Small screens: the sidebar turns into a drawer.
+@mixin mobile {
+  @media (max-width: theme.$bp-md) {
+    @content;
+  }
+}
+
+// Very small screens.
+@mixin narrow {
+  @media (max-width: theme.$bp-sm) {
+    @content;
+  }
+}
+
+// Ring drawn around a form control that has the focus.
+@mixin control-focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--focus);
+  outline: none;
+}
+
+// Truncates a single line of text with an ellipsis.
+@mixin truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

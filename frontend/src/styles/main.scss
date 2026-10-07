@@ -1,0 +1,28 @@
+// The single entry point of the styles: Vite compiles everything below into one CSS file.
+// The order matters: theme variables first, then the base, the layout, the components, the pages.
+
+@use 'theme';
+
+@use 'base/reset';
+@use 'base/typography';
+
+@use 'layout/app-shell';
+@use 'layout/sidebar';
+@use 'layout/page';
+
+@use 'components/button';
+@use 'components/field';
+@use 'components/card';
+@use 'components/dialog';
+@use 'components/menu';
+@use 'components/toast';
+@use 'components/empty';
+@use 'components/badge';
+@use 'components/chip';
+@use 'components/search';
+@use 'components/select';
+@use 'components/tags';
+
+@use 'pages/login';
+@use 'pages/books';
+@use 'pages/library';

@@ -1,0 +1,76 @@
+@use '../mixins';
+
+// A field holding a list of short texts shown as removable chips.
+.c-tags {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--control-height);
+  padding: var(--space-1) var(--space-2);
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  cursor: text;
+  transition:
+    border-color var(--duration) var(--ease),
+    box-shadow var(--duration) var(--ease);
+
+  &:hover {
+    border-color: var(--text-faint);
+  }
+
+  &:focus-within {
+    @include mixins.control-focus;
+  }
+
+  &__chip {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+    height: 1.75rem;
+    padding: 0 var(--space-1) 0 var(--space-3);
+    color: var(--accent-soft-text);
+    font-size: var(--text-sm);
+    font-weight: var(--weight-medium);
+    background: var(--accent-soft);
+    border-radius: var(--radius-full);
+  }
+
+  &__remove {
+    display: grid;
+    place-items: center;
+    width: 1.25rem;
+    height: 1.25rem;
+    border-radius: var(--radius-full);
+    transition: background var(--duration) var(--ease);
+
+    svg {
+      width: 0.8125rem;
+      height: 0.8125rem;
+    }
+
+    &:hover {
+      color: var(--accent-contrast);
+      background: var(--accent);
+    }
+  }
+
+  &__input {
+    flex: 1 1 8rem;
+    min-width: 6rem;
+    height: 1.75rem;
+    padding: 0 var(--space-1);
+    background: transparent;
+    border: 0;
+
+    // The whole field already shows the focus ring.
+    &:focus-visible {
+      outline: none;
+    }
+
+    &::placeholder {
+      color: var(--text-faint);
+    }
+  }
+}

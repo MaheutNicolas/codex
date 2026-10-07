@@ -25,7 +25,7 @@ class KnowledgeRepository extends ServiceEntityRepository
     public function summariesQuery(Book $book, ?string $type): QueryBuilder
     {
         $qb = $this->createQueryBuilder('k')
-            ->select('k.slug AS id', 'k.name', 'k.type', 'k.summary')
+            ->select('k.slug AS id', 'k.name', 'k.type', 'k.summary', 'k.aliases')
             ->andWhere('k.book = :book')->setParameter('book', $book)
             ->orderBy('k.name')
             ->addOrderBy('k.slug');

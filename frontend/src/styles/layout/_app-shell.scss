@@ -1,0 +1,56 @@
+@use '../mixins';
+
+// The logged-in layout: a sidebar and the page next to it.
+.app-shell {
+  display: grid;
+  grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
+  min-height: 100vh;
+
+  &__main {
+    min-width: 0;
+  }
+
+  // Only shown on small screens, where the sidebar is a drawer.
+  &__topbar {
+    display: none;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    align-items: center;
+    gap: var(--space-3);
+    height: 3.5rem;
+    padding: 0 var(--space-4);
+    background: color-mix(in srgb, var(--bg) 88%, transparent);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--border);
+    font-weight: var(--weight-semibold);
+  }
+
+  &__scrim {
+    display: none;
+  }
+
+  @include mixins.mobile {
+    grid-template-columns: minmax(0, 1fr);
+
+    &__topbar {
+      display: flex;
+    }
+
+    &__scrim {
+      position: fixed;
+      inset: 0;
+      z-index: calc(var(--z-sidebar) - 1);
+      background: var(--overlay);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity var(--duration) var(--ease);
+
+      &.is-visible {
+        display: block;
+        opacity: 1;
+        pointer-events: auto;
+      }
+    }
+  }
+}

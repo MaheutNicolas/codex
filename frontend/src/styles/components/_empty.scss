@@ -1,0 +1,34 @@
+// What is shown when a list has nothing in it yet.
+.c-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-8) var(--space-5);
+  text-align: center;
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-lg);
+
+  &__icon {
+    display: grid;
+    place-items: center;
+    width: 3rem;
+    height: 3rem;
+    color: var(--accent-soft-text);
+    background: var(--accent-soft);
+    border-radius: var(--radius-full);
+
+    svg {
+      width: 1.375rem;
+      height: 1.375rem;
+    }
+  }
+
+  &__title {
+    font-size: var(--text-lg);
+  }
+
+  p {
+    max-width: 28rem;
+  }
+}

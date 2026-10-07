@@ -1,0 +1,21 @@
+// A native <select> with our own chevron.
+.c-select {
+  position: relative;
+
+  &__control {
+    padding-right: 2.25rem;
+    appearance: none;
+    cursor: pointer;
+  }
+
+  &__icon {
+    position: absolute;
+    top: 50%;
+    right: var(--space-3);
+    width: 1rem;
+    height: 1rem;
+    color: var(--text-faint);
+    transform: translateY(-50%);
+    pointer-events: none;
+  }
+}
