@@ -4,6 +4,7 @@ namespace App\Controller;
 
 use App\Error\ErrorCode;
 use App\Error\ErrorResponse;
+use App\Mcp\AllowedHostMiddleware;
 use App\Mcp\CodexTools;
 use App\Repository\ApiKeyRepository;
 use App\Service\ApiKeyService;
@@ -13,7 +14,6 @@ use App\Service\TimelineService;
 use Mcp\Server;
 use Mcp\Server\Session\FileSessionStore;
 use Mcp\Server\Transport\Http\Middleware\CorsMiddleware;
-use Mcp\Server\Transport\Http\Middleware\DnsRebindingProtectionMiddleware;
 use Mcp\Server\Transport\StreamableHttpTransport;
 use Symfony\Bridge\PsrHttpMessage\Factory\HttpFoundationFactory;
 use Symfony\Bridge\PsrHttpMessage\Factory\PsrHttpFactory;
@@ -79,7 +79,7 @@ final class McpController
             null,
             [
                 new CorsMiddleware(),
-                new DnsRebindingProtectionMiddleware(array_map('trim', explode(',', $this->allowedHosts))),
+                new AllowedHostMiddleware(array_map('trim', explode(',', $this->allowedHosts))),
             ],
         );
 

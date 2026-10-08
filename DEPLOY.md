@@ -1,6 +1,6 @@
 # Déploiement sur un VPS (Debian / Ubuntu, nginx + PHP-FPM + MySQL)
 
-Ce guide met Codex en ligne sur un seul nom de domaine, comme en développement : l'application Vue, l'API et le serveur MCP partagent la même origine. nginx sert l'application (`frontend/dist`) et envoie `/api`, `/health` et `/mcp` à Symfony (PHP-FPM). Remplacez `codex.example.com` par votre nom de domaine et `/var/www/codex` par le dossier de votre choix.
+Ce guide met Codex en ligne sur un seul nom de domaine, comme en développement : l'application Vue, l'API et le serveur MCP partagent la même origine. nginx sert l'application (`frontend/dist`) et envoie `/api`, `/health` et `/mcp` à Symfony (PHP-FPM). Les exemples utilisent le domaine `codexbase.fr` et le dossier `/var/www/codex` ; adaptez-les si besoin.
 
 ## 0. Ce qu'il faut avant de commencer
 
@@ -39,26 +39,26 @@ GRANT ALL PRIVILEGES ON codex.* TO 'codex'@'localhost';
 sudo mkdir -p /var/www/codex && sudo chown $USER: /var/www/codex
 git clone <adresse-du-dépôt-GitHub> /var/www/codex
 cd /var/www/codex/backend
-composer install --no-dev --optimize-autoloader
 ```
 
-Créez `backend/.env.local` (non versionné, c'est là que vivent les secrets) :
+**Avant d'installer les dépendances**, créez `backend/.env.local` (non versionné, c'est là que vivent les secrets). Il doit exister d'abord : `composer install` lance `cache:clear`, et sans `APP_ENV=prod` Symfony démarre en mode développement et cherche un outil (MakerBundle) que `--no-dev` n'installe pas.
 
 ```dotenv
 APP_ENV=prod
 APP_SECRET=<64 caractères aléatoires>
 DATABASE_URL="mysql://codex:UN_MOT_DE_PASSE_LONG@127.0.0.1:3306/codex?serverVersion=mariadb-10.11.14&charset=utf8mb4"
-MCP_ALLOWED_HOSTS=codex.example.com
+MCP_ALLOWED_HOSTS=localhost,127.0.0.1,[::1],codexbase.fr
 ```
 
 - `APP_SECRET` : `php -r "echo bin2hex(random_bytes(32));"`. Il signe les cookies de connexion ; le changer déconnecte tout le monde.
 - `DATABASE_URL` : le préfixe reste `mysql://` pour MariaDB et pour MySQL. Avec MariaDB, `serverVersion=mariadb-10.11.14` (votre version exacte : `mariadb --version`) ; avec MySQL 8, `serverVersion=8.0`. Cette valeur sert à Doctrine pour choisir le bon dialecte SQL.
-- `MCP_ALLOWED_HOSTS` : les noms de domaine auxquels le serveur MCP répond (séparés par des virgules). **Sans votre domaine ici, le serveur MCP refuse les requêtes** (erreur « Invalid Host header »).
+- `MCP_ALLOWED_HOSTS` : les noms de domaine auxquels le serveur MCP répond (séparés par des virgules). `backend/.env` contient déjà `codexbase.fr` ; si vous changez de domaine, mettez-le ici ou dans `.env`. **Sans le bon domaine, le serveur MCP refuse les requêtes** (erreur « Invalid Host header »).
 - `CORS_ALLOW_ORIGIN` n'a pas besoin d'être changé : l'application et l'API sont sur la même origine, il n'y a pas de requête entre origines.
 
 Puis :
 
 ```bash
+composer install --no-dev --optimize-autoloader
 php bin/console doctrine:migrations:migrate --no-interaction
 php bin/console app:user:create <votre-identifiant>     # demande le mot de passe
 APP_ENV=prod php bin/console cache:clear
@@ -89,7 +89,7 @@ Créez `/etc/nginx/sites-available/codex` :
 server {
     listen 80;
     listen [::]:80;
-    server_name codex.example.com;
+    server_name codexbase.fr;
 
     root /var/www/codex/frontend/dist;
     index index.html;
@@ -133,7 +133,7 @@ server {
 ```bash
 sudo ln -s /etc/nginx/sites-available/codex /etc/nginx/sites-enabled/
 sudo nginx -t && sudo systemctl reload nginx
-curl http://codex.example.com/health        # {"status":"ok"}
+curl http://codexbase.fr/health        # {"status":"ok"}
 ```
 
 Adaptez `php8.4-fpm.sock` si votre version de PHP est différente (`ls /run/php/`).
@@ -151,10 +151,10 @@ Ne laissez pas le port de la base (3306) ouvert vers l'extérieur : l'applicatio
 ## 7. HTTPS
 
 ```bash
-sudo certbot --nginx -d codex.example.com
+sudo certbot --nginx -d codexbase.fr
 ```
 
-Certbot modifie la configuration nginx (redirection de HTTP vers HTTPS) et renouvelle le certificat tout seul. Vérifiez ensuite : `https://codex.example.com`.
+Certbot modifie la configuration nginx (redirection de HTTP vers HTTPS) et renouvelle le certificat tout seul. Vérifiez ensuite : `https://codexbase.fr`.
 
 Le cookie de connexion devient `Secure` automatiquement quand la requête arrive en HTTPS ; c'est nginx qui termine le HTTPS sur la même machine, donc aucun réglage de proxy n'est nécessaire.
 
@@ -168,7 +168,7 @@ Les anciens numéros de livre ne sont pas conservés (le livre en ligne a son pr
 
 ## 9. Brancher l'IA
 
-Page **Clé d'API** du livre en ligne : copiez l'**adresse du serveur MCP** (`https://codex.example.com/mcp/cdx_…`) et ajoutez-la comme connecteur (serveur MCP personnalisé) dans ChatGPT ou Claude, sans authentification supplémentaire.
+Page **Clé d'API** du livre en ligne : copiez l'**adresse du serveur MCP** (`https://codexbase.fr/mcp/cdx_…`) et ajoutez-la comme connecteur (serveur MCP personnalisé) dans ChatGPT ou Claude, sans authentification supplémentaire.
 
 ## 10. Mettre à jour plus tard
 
@@ -195,6 +195,7 @@ Vous pouvez aussi exporter chaque livre en JSON depuis la page Export.
 
 | Symptôme | Où regarder |
 |---|---|
+| `composer install` : `Class "…MakerBundle" not found` (script `cache:clear`) | `backend/.env.local` absent ou sans `APP_ENV=prod`. Créez-le puis relancez `composer install --no-dev --optimize-autoloader` (ou `php bin/console cache:clear`) |
 | Page blanche ou erreur 500 | `backend/var/log/prod.log`, `/var/log/nginx/error.log` |
 | 502 Bad Gateway | PHP-FPM arrêté, ou mauvais nom de socket dans `fastcgi_pass` |
 | `Invalid Host header` sur `/mcp` | `MCP_ALLOWED_HOSTS` ne contient pas votre domaine, puis `cache:clear` |
