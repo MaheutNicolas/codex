@@ -34,6 +34,29 @@ Paquets installés : `symfony/orm-pack`, `symfony/serializer`, `symfony/validato
 
 **InnoDB obligatoire** : le MySQL de WAMP crée les tables en MyISAM par défaut, qui ignore les clés étrangères et `ON DELETE CASCADE`. `default_table_options: engine: InnoDB` est donc forcé dans `config/packages/doctrine.yaml`.
 
+## Tests
+
+Le backend a des tests automatiques (PHPUnit) : `cd backend && composer test` (ou `php vendor/bin/phpunit`), une trentaine de secondes. Ils s'exécutent sur une **vraie base MySQL/MariaDB**, parce que la recherche plein texte et la transaction de l'import ne se testent pas sur autre chose.
+
+**Première fois** (la base de test s'appelle `codex_test` : le suffixe `_test` est ajouté par `config/packages/doctrine.yaml`, jamais la base `codex` de développement) :
+1. `backend/.env` doit exister (`cp .env.example .env`).
+2. Quand `APP_ENV=test`, Symfony **ne lit pas `.env.local`** : mettre l'adresse de la base dans `backend/.env.test.local` (non versionné), par exemple `DATABASE_URL="mysql://root:@127.0.0.1:3306/codex?serverVersion=8.0&charset=utf8mb4"`.
+3. `php bin/console --env=test doctrine:database:create --if-not-exists` puis `php bin/console --env=test doctrine:migrations:migrate --no-interaction`. À refaire après chaque nouvelle migration.
+
+**Ce qu'ils couvrent** (`backend/tests/`) :
+- `Api/AuthTest` : routes publiques, connexion, déconnexion, un compte ne voit jamais les livres d'un autre.
+- `Api/ApiKeyTest` : une clé par livre, lecture seule, liée à son livre, interdite sur les routes de session, remplacée par la régénération.
+- `Api/ContentTest` : création, lecture, modification et suppression des fiches (les dix types), événements et participants, avec leur validation, la pagination et les erreurs.
+- `Api/ImportExportTest` : import créé puis mis à jour, **tout ou rien** (rien d'écrit si un élément est invalide), documents mal formés, export qui se réimporte tel quel.
+- `Api/ViewpointTest` : chronologie et fiche selon le point de vue du lecteur (`atChapter`, `beforeChapter`, `includeSecrets`).
+- `Api/SearchTest` : recherche (mot, début de mot, alias, étiquettes, accents et casse ignorés, secrets, total).
+- `Api/McpTest` : le serveur MCP de bout en bout (poignée de main, les cinq outils en lecture seule, erreurs lisibles, clé inconnue, domaine non autorisé).
+- `Unit/` : règle de visibilité d'un événement, fabrication des requêtes de recherche, complétude des codes d'erreur.
+
+**Comment ils sont écrits.** Les tests valident vraiment les écritures (pas de transaction annulée à la fin, car l'index plein texte de MySQL ne voit les lignes qu'une fois validées) : chaque test crée ses propres comptes et les supprime à la fin, la base supprimant en cascade leurs livres. `ApiTestCase` refuse de tourner sur une base dont le nom ne finit pas par `_test`. Pour ajouter un test, étendre `ApiTestCase` : `loginAsNewUser()`, `createBook()`, `import()` (le moyen le plus rapide de préparer des données, avec `story()` comme petite histoire toute prête), `api()` et `assertError()`.
+
+Le frontend n'a pas encore de tests automatiques : il est vérifié à la main, dans un navigateur.
+
 ## Conventions
 
 - **Uniquement de l'anglais dans le code** : identifiants (classes, propriétés, colonnes, routes), commentaires, messages de validation et d'erreur de l'API.
