@@ -100,7 +100,7 @@ final class McpTest extends ApiTestCase
         self::assertSame('2025-03-26', $init['body']['result']['protocolVersion']);
     }
 
-    public function testTheServerOffersFiveReadOnlyTools(): void
+    public function testTheServerOffersSixReadOnlyTools(): void
     {
         $session = $this->openSession();
 
@@ -108,7 +108,7 @@ final class McpTest extends ApiTestCase
         $names = array_column($tools, 'name');
         sort($names);
 
-        self::assertSame(['get_event', 'get_knowledge', 'index', 'search', 'timeline'], $names, 'Reading only: no tool writes anything.');
+        self::assertSame(['get_event', 'get_knowledge', 'get_related', 'index', 'search', 'timeline'], $names, 'Reading only: no tool writes anything.');
         foreach ($tools as $tool) {
             self::assertNotEmpty($tool['description'], $tool['name'].' needs a description: it is what the AI reads to choose a tool.');
             foreach ($tool['inputSchema']['properties'] ?? [] as $property => $schema) {
@@ -225,6 +225,30 @@ final class McpTest extends ApiTestCase
         self::assertSame(12, $search['total']);
     }
 
+    public function testGetRelatedFindsTheEntriesThatShareEvents(): void
+    {
+        $session = $this->openSession();
+
+        $related = $this->tool($session, 'get_related', ['id' => 'aldric']);
+
+        self::assertFalse($related['error']);
+        self::assertSame(['citadel'], array_column($related['result']['data'], 'id'), 'Aldric shares the first event with the citadel; the other events are his alone.');
+        self::assertSame(1, $related['result']['data'][0]['sharedEvents']);
+        self::assertSame('events', $related['result']['data'][0]['source']);
+        self::assertSame(1, $related['result']['total']);
+    }
+
+    public function testGetRelatedFollowsThePointOfView(): void
+    {
+        $session = $this->openSession();
+
+        $none = $this->tool($session, 'get_related', ['id' => 'mira', 'atChapter' => 3]);
+        self::assertSame([], $none['result']['data'], 'Mira shares nothing with anyone.');
+
+        $before = $this->tool($session, 'get_related', ['id' => 'aldric', 'beforeChapter' => 1]);
+        self::assertSame([], $before['result']['data'], 'Nothing has been read before chapter 1.');
+    }
+
     public function testToolErrorsAreReadableAndNotProtocolErrors(): void
     {
         $session = $this->openSession();
@@ -238,6 +262,9 @@ final class McpTest extends ApiTestCase
             ['get_knowledge', ['id' => 'aldric', 'limit' => 201]],
             ['search', ['query' => '%%']],
             ['search', ['query' => 'oath', 'limit' => 51]],
+            ['get_related', ['id' => 'nobody']],
+            ['get_related', ['id' => 'aldric', 'limit' => 0]],
+            ['get_related', ['id' => 'aldric', 'atChapter' => 1, 'beforeChapter' => 2]],
         ] as [$name, $arguments]) {
             $result = $this->tool($session, $name, $arguments);
             self::assertTrue($result['error'], "$name ".json_encode($arguments).' must fail as a tool error');

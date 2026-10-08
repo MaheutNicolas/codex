@@ -6,6 +6,7 @@ use App\Api\ApiHelper;
 use App\Entity\Book;
 use App\Entity\Knowledge;
 use App\Service\KnowledgeService;
+use App\Service\RelatedService;
 use App\Validation\Validate;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -17,6 +18,7 @@ final class KnowledgeController
 {
     public function __construct(
         private readonly KnowledgeService $service,
+        private readonly RelatedService $related,
         private readonly ApiHelper $api,
         private readonly Validate $validate,
     ) {
@@ -44,6 +46,18 @@ final class KnowledgeController
         }
 
         return ApiHelper::json($this->service->get($book, $id));
+    }
+
+    /** The entries linked to this one (for now: those that share events with it), seen from a point of view. */
+    #[Route('/{id}/related', methods: ['GET'])]
+    public function related(Book $book, string $id, Request $request): JsonResponse
+    {
+        return ApiHelper::json($this->related->related(
+            $book,
+            $id,
+            $this->validate->viewpoint($request),
+            $this->validate->intQuery($request, 'limit', 1, 50) ?? 20,
+        ));
     }
 
     #[Route('', methods: ['POST'])]

@@ -8,6 +8,7 @@ use App\Entity\Book;
 use App\Entity\Knowledge;
 use App\Error\ApiException;
 use App\Service\KnowledgeService;
+use App\Service\RelatedService;
 use App\Service\SearchService;
 use App\Service\TimelineService;
 use Mcp\Exception\ToolCallException;
@@ -28,6 +29,7 @@ final class CodexTools
         private readonly KnowledgeService $knowledge,
         private readonly TimelineService $timeline,
         private readonly SearchService $search,
+        private readonly RelatedService $related,
     ) {
     }
 
@@ -81,6 +83,34 @@ final class CodexTools
             $this->viewpoint($atChapter, $beforeChapter, $includeSecrets),
             new Page($limit, $offset),
         )));
+    }
+
+    /**
+     * Finds the entries most linked to one entry: those that take part in the same events, the most often first.
+     * Use it to see who and what surrounds a character or a place before writing a scene with it. Each result says
+     * how many events they share and in which chapters (first and last). "total" counts every linked entry.
+     * Read an entry in full with get_knowledge, or the events they share with timeline and knowledgeId.
+     *
+     * @param string   $id             The id of the entry, e.g. "aldric".
+     * @param int|null $atChapter      The reader has read chapters 1 to this one (inclusive): later events do not count.
+     * @param int|null $beforeChapter  The reader has read chapters 1 to this one minus one.
+     * @param bool     $includeSecrets Also count events the reader does not know yet and events never told.
+     * @param int      $limit          How many linked entries to return (1 to 50).
+     *
+     * @return array<string, mixed>
+     */
+    public function get_related(string $id, ?int $atChapter = null, ?int $beforeChapter = null, bool $includeSecrets = false, int $limit = 20): array
+    {
+        if ($limit < 1 || $limit > 50) {
+            throw new ToolCallException('The limit must be between 1 and 50.');
+        }
+
+        return $this->call(fn () => $this->related->related(
+            $this->book,
+            $id,
+            $this->viewpoint($atChapter, $beforeChapter, $includeSecrets),
+            $limit,
+        ));
     }
 
     /**

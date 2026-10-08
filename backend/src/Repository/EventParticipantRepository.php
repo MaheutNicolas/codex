@@ -2,6 +2,7 @@
 
 namespace App\Repository;
 
+use App\Api\Viewpoint;
 use App\Entity\Book;
 use App\Entity\EventParticipant;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
@@ -27,6 +28,43 @@ class EventParticipantRepository extends ServiceEntityRepository
             ->andWhere('k.slug = :knowledgeSlug')->setParameter('knowledgeSlug', $knowledgeSlug)
             ->getQuery()
             ->getOneOrNullResult();
+    }
+
+    /**
+     * The entries that share events with the given one, the most linked first. Only the events the reader may see
+     * count, so a secret never reveals a link. Two queries: the best $limit entries, and how many there are.
+     *
+     * @return array{rows: list<array{id: string, name: string, type: string, sharedEvents: int, firstChapter: int|null, lastChapter: int|null}>, total: int}
+     */
+    public function relatedTo(Book $book, string $knowledgeSlug, Viewpoint $viewpoint, int $limit): array
+    {
+        [$visible, $visibleParams] = ViewpointSql::events($viewpoint, 'e');
+        $from = 'FROM event_participant p1 '
+            .'JOIN knowledge k1 ON k1.id = p1.knowledge_id AND k1.book_id = :book AND k1.slug = :slug '
+            .'JOIN event e ON e.id = p1.event_id AND '.$visible.' '
+            .'JOIN event_participant p2 ON p2.event_id = e.id AND p2.knowledge_id <> p1.knowledge_id '
+            .'JOIN knowledge k2 ON k2.id = p2.knowledge_id';
+        $params = ['book' => $book->getId(), 'slug' => $knowledgeSlug] + $visibleParams;
+        $connection = $this->getEntityManager()->getConnection();
+
+        $rows = $connection->fetchAllAssociative(
+            'SELECT k2.slug AS id, k2.name, k2.type, COUNT(DISTINCT e.id) AS sharedEvents, '
+            .'MIN(e.chapter) AS firstChapter, MAX(e.chapter) AS lastChapter '
+            .$from.' GROUP BY k2.id, k2.slug, k2.name, k2.type ORDER BY sharedEvents DESC, k2.name, k2.slug LIMIT '.$limit,
+            $params,
+        );
+
+        return [
+            'rows' => array_map(static fn (array $row) => [
+                'id' => $row['id'],
+                'name' => $row['name'],
+                'type' => $row['type'],
+                'sharedEvents' => (int) $row['sharedEvents'],
+                'firstChapter' => null === $row['firstChapter'] ? null : (int) $row['firstChapter'],
+                'lastChapter' => null === $row['lastChapter'] ? null : (int) $row['lastChapter'],
+            ], $rows),
+            'total' => (int) $connection->fetchOne('SELECT COUNT(DISTINCT k2.id) '.$from, $params),
+        ];
     }
 
     /**

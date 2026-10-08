@@ -104,14 +104,9 @@ class EventRepository extends ServiceEntityRepository
         $any = SearchSql::likeAny(['title', 'slug', SearchSql::jsonText('tags')], \count($likes));
         $named = SearchSql::likeCount(['title', 'slug', SearchSql::jsonText('tags')], \count($likes));
         $where = 'book_id = :book AND (MATCH(title, summary, detail) AGAINST (:match IN BOOLEAN MODE) OR '.$any.')';
-        $params = ['book' => $book->getId(), 'match' => $match] + SearchSql::likeParams($likes);
-        if (!$viewpoint->includeSecrets) {
-            $where .= ' AND revealed = 1';
-        }
-        if (null !== $viewpoint->maxChapter) {
-            $where .= $viewpoint->includeSecrets ? ' AND (chapter <= :maxChapter OR chapter IS NULL)' : ' AND chapter <= :maxChapter';
-            $params['maxChapter'] = $viewpoint->maxChapter;
-        }
+        [$visible, $visibleParams] = ViewpointSql::events($viewpoint);
+        $where .= ' AND '.$visible;
+        $params = ['book' => $book->getId(), 'match' => $match] + SearchSql::likeParams($likes) + $visibleParams;
 
         $connection = $this->getEntityManager()->getConnection();
         $rows = $connection->fetchAllAssociative(
