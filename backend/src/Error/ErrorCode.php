@@ -19,8 +19,10 @@ enum ErrorCode: string
     case KNOWLEDGE_NOT_FOUND = 'KNOWLEDGE_NOT_FOUND';
     case EVENT_NOT_FOUND = 'EVENT_NOT_FOUND';
     case PARTICIPANT_NOT_FOUND = 'PARTICIPANT_NOT_FOUND';
+    case RELATION_NOT_FOUND = 'RELATION_NOT_FOUND';
     case METHOD_NOT_ALLOWED = 'METHOD_NOT_ALLOWED';
     case ID_ALREADY_EXISTS = 'ID_ALREADY_EXISTS';
+    case RELATION_ALREADY_EXISTS = 'RELATION_ALREADY_EXISTS';
     case REFERENCE_NOT_FOUND = 'REFERENCE_NOT_FOUND';
     case TOO_MANY_ATTEMPTS = 'TOO_MANY_ATTEMPTS';
     case INTERNAL_ERROR = 'INTERNAL_ERROR';
@@ -38,9 +40,11 @@ enum ErrorCode: string
             self::BOOK_NOT_FOUND,
             self::KNOWLEDGE_NOT_FOUND,
             self::EVENT_NOT_FOUND,
-            self::PARTICIPANT_NOT_FOUND => 404,
+            self::PARTICIPANT_NOT_FOUND,
+            self::RELATION_NOT_FOUND => 404,
             self::METHOD_NOT_ALLOWED => 405,
             self::ID_ALREADY_EXISTS,
+            self::RELATION_ALREADY_EXISTS,
             self::REFERENCE_NOT_FOUND => 409,
             self::TOO_MANY_ATTEMPTS => 429,
             self::INTERNAL_ERROR => 500,
@@ -62,8 +66,10 @@ enum ErrorCode: string
             self::KNOWLEDGE_NOT_FOUND => 'The knowledge entry was not found.',
             self::EVENT_NOT_FOUND => 'The event was not found.',
             self::PARTICIPANT_NOT_FOUND => 'The event participant was not found.',
+            self::RELATION_NOT_FOUND => 'The relation was not found.',
             self::METHOD_NOT_ALLOWED => 'This HTTP method is not allowed on this route.',
             self::ID_ALREADY_EXISTS => 'A resource with this identifier already exists.',
+            self::RELATION_ALREADY_EXISTS => 'These two entries already have a relation at this chapter.',
             self::REFERENCE_NOT_FOUND => 'A referenced resource does not exist.',
             self::TOO_MANY_ATTEMPTS => 'Too many failed login attempts. Try again later.',
             self::INTERNAL_ERROR => 'An unexpected error occurred.',
@@ -85,8 +91,10 @@ enum ErrorCode: string
             self::KNOWLEDGE_NOT_FOUND => 'No knowledge entry (character, place, system...) has the identifier given in the URL.',
             self::EVENT_NOT_FOUND => 'No event has the identifier given in the URL.',
             self::PARTICIPANT_NOT_FOUND => 'The given knowledge entry does not participate in the given event.',
+            self::RELATION_NOT_FOUND => 'No relation has the identifier given in the URL.',
             self::METHOD_NOT_ALLOWED => 'The route exists but does not accept this HTTP method. The "Allow" response header lists the accepted methods.',
             self::ID_ALREADY_EXISTS => 'A POST tried to create a resource with an identifier that is already taken, or a participant link that already exists.',
+            self::RELATION_ALREADY_EXISTS => 'The relation of a pair of entries is a list of states, one per chapter: a state at this chapter already exists for these two entries (in either direction). The "details" object names the existing relation.',
             self::REFERENCE_NOT_FOUND => 'A field of the body points to a resource that does not exist, for example an event participant whose "knowledgeId" matches no knowledge entry. The "details" object names the field and the missing identifier.',
             self::TOO_MANY_ATTEMPTS => 'Too many failed logins came from the same address or for the same username in a short time. Login is blocked temporarily, even with the right password.',
             self::INTERNAL_ERROR => 'An unexpected server-side failure. The cause is written to the server logs and never exposed in the response.',
@@ -108,8 +116,10 @@ enum ErrorCode: string
             self::KNOWLEDGE_NOT_FOUND => 'Look the identifier up through GET /api/books/{bookId}/index (names and aliases with their identifiers) and retry with an existing one.',
             self::EVENT_NOT_FOUND => 'List events with GET /api/books/{bookId}/events and retry with an existing identifier.',
             self::PARTICIPANT_NOT_FOUND => 'List the links with GET /api/books/{bookId}/event-participants?eventId=...&knowledgeId=... to check whether the link exists.',
+            self::RELATION_NOT_FOUND => 'List relations with GET /api/books/{bookId}/relations (filter with knowledgeId) and retry with an existing identifier.',
             self::METHOD_NOT_ALLOWED => 'Use one of the methods listed in the "Allow" response header.',
             self::ID_ALREADY_EXISTS => 'Choose another identifier, or use PATCH to update the existing resource.',
+            self::RELATION_ALREADY_EXISTS => 'Change the existing relation named in "details" with PATCH, or add the new state at another chapter.',
             self::REFERENCE_NOT_FOUND => 'Create the referenced resource first, or correct the identifier named in "details".',
             self::TOO_MANY_ATTEMPTS => 'Wait for the delay given in the "Retry-After" response header (in seconds), then try again with the right credentials.',
             self::INTERNAL_ERROR => 'Retry once. If the error persists, check the server logs (var/log) to find the cause.',

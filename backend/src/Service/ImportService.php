@@ -8,6 +8,7 @@ use App\Error\ErrorCode;
 use App\Repository\EventParticipantRepository;
 use App\Repository\EventRepository;
 use App\Repository\KnowledgeRepository;
+use App\Repository\RelationRepository;
 use Doctrine\ORM\EntityManagerInterface;
 
 /**
@@ -20,16 +21,18 @@ final class ImportService
 {
     public const MAX_ITEMS = 1000;
 
-    private const SECTIONS = ['knowledge', 'events', 'participants'];
+    private const SECTIONS = ['knowledge', 'events', 'participants', 'relations'];
 
     public function __construct(
         private readonly EntityManagerInterface $em,
         private readonly KnowledgeService $knowledge,
         private readonly EventService $events,
         private readonly EventParticipantService $participants,
+        private readonly RelationService $relations,
         private readonly KnowledgeRepository $knowledgeRepository,
         private readonly EventRepository $eventRepository,
         private readonly EventParticipantRepository $participantRepository,
+        private readonly RelationRepository $relationRepository,
     ) {
     }
 
@@ -45,7 +48,7 @@ final class ImportService
         return $this->em->wrapInTransaction(function () use ($book, $document): array {
             $result = ['created' => array_fill_keys(self::SECTIONS, 0), 'updated' => array_fill_keys(self::SECTIONS, 0)];
 
-            // Knowledge and events first, so that the links of the document can point to them.
+            // Knowledge and events first, so that the links and the relations of the document can point to them.
             foreach ($document['knowledge'] ?? [] as $index => $item) {
                 $slug = $item['id'] ?? null;
                 $exists = \is_string($slug) && null !== $this->knowledgeRepository->findBySlug($book, $slug);
@@ -70,6 +73,14 @@ final class ImportService
                 $this->run('participants', $index, $exists, $result, fn () => $exists
                     ? $this->participants->update($book, $eventId, $knowledgeId, array_diff_key($item, ['eventId' => 0, 'knowledgeId' => 0]))
                     : $this->participants->create($book, $item));
+            }
+
+            foreach ($document['relations'] ?? [] as $index => $item) {
+                $slug = $item['id'] ?? null;
+                $exists = is_string($slug) && null !== $this->relationRepository->findBySlug($book, $slug);
+                $this->run('relations', $index, $exists, $result, fn () => $exists
+                    ? $this->relations->update($book, $slug, array_diff_key($item, ['id' => 0]))
+                    : $this->relations->create($book, $item));
             }
 
             return $result;

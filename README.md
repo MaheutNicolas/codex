@@ -50,6 +50,7 @@ Le backend a des tests automatiques (PHPUnit) : `cd backend && composer test` (o
 - `Api/ImportExportTest` : import créé puis mis à jour, **tout ou rien** (rien d'écrit si un élément est invalide), documents mal formés, export qui se réimporte tel quel.
 - `Api/ViewpointTest` : chronologie et fiche selon le point de vue du lecteur (`atChapter`, `beforeChapter`, `includeSecrets`).
 - `Api/SearchTest` : recherche (mot, début de mot, alias, étiquettes, accents et casse ignorés, secrets, total).
+- `Api/RelationTest` : les états de relation (un par couple et par chapitre, dans les deux sens), l'historique par chapitre, la fin d'une relation, la suppression en cascade, l'import et l'export.
 - `Api/McpTest` : le serveur MCP de bout en bout (poignée de main, les cinq outils en lecture seule, erreurs lisibles, clé inconnue, domaine non autorisé).
 - `Unit/` : règle de visibilité d'un événement, fabrication des requêtes de recherche, complétude des codes d'erreur.
 
@@ -153,6 +154,24 @@ Lien événement ↔ connaissance (personnage, lieu, système…), avec un rôle
 
 Index : PK `(event_id, knowledge_id)` et `(knowledge_id, event_id)`. L'événement et la connaissance doivent appartenir au même livre : l'API les cherche dans le livre de l'URL, donc un lien entre deux livres est impossible (`REFERENCE_NOT_FOUND`).
 
+### Relation (`knowledge_relation`)
+L'**état** de la relation entre deux fiches, à partir d'un chapitre. Une relation qui change n'est pas modifiée : on **ajoute un nouvel état** au chapitre où elle change (alliés dès le début, ennemis au chapitre 6, plus de lien au chapitre 9). Les états d'un couple forment son historique ; l'état à un chapitre donné est le dernier état jusqu'à ce chapitre. Même fonctionnement que les événements : identifiant lisible (`rel-0001`), chapitre, `revealed`.
+| Champ | Type | Notes |
+|---|---|---|
+| id | int (PK, auto) | clé technique, non exposée |
+| book | ManyToOne Book | onDelete CASCADE |
+| slug | string | exposé comme `id` : `rel-0001` ; unique avec le livre |
+| source, target | ManyToOne Knowledge | onDelete CASCADE ; deux fiches différentes du même livre (exposées en `sourceId` / `targetId`) |
+| type | string | voir ci-dessous |
+| chapter | int, défaut 0 | **0 = dès le début du livre** (l'API dit `null`) ; sinon le chapitre à partir duquel l'état tient |
+| revealed | bool, défaut true | le lecteur le sait-il ? (relation secrète sinon) |
+| note | string(500), nullable | nuance libre |
+| createdAt / updatedAt | datetime_immutable | |
+
+Types (`Relation::TYPES`) : **symétriques** `ally`, `enemy`, `rival`, `friend`, `family`, `partner`, `other` (avec la note) ; **orientés** (la source est le … de la cible) `mentor`, `parent`, `member_of`, `leader_of`, `serves` ; et `none`, qui **met fin** à la relation du couple à partir de ce chapitre.
+
+Règles : un couple a **un seul état par chapitre**, quel que soit le sens (`RELATION_ALREADY_EXISTS`) ; une fiche n'a pas de relation avec elle-même ; supprimer une fiche supprime ses états. Index : unique `(book_id, slug)` et `(source_id, target_id, chapter)`, `(target_id)`, `(book_id, chapter)`.
+
 Points clés :
 - `worldOrder` est un entier car les dates de fiction ne se trient pas ; `worldDate` n'est qu'un affichage optionnel.
 - `summary` séparé de `description`/`detail` pour que l'IA reçoive des réponses courtes d'abord.
@@ -175,6 +194,7 @@ Préfixe `/api`, JSON uniquement. `{bookId}` est l'identifiant numérique du liv
 |---|---|---|
 | Connaissances | `/api/books/{bookId}/knowledge` | `/api/books/{bookId}/knowledge/{id}` |
 | Événements | `/api/books/{bookId}/events` | `/api/books/{bookId}/events/{id}` |
+| Relations | `/api/books/{bookId}/relations` | `/api/books/{bookId}/relations/{id}` |
 | Participants | `/api/books/{bookId}/event-participants` | `/api/books/{bookId}/event-participants/{eventId}/{knowledgeId}` |
 | Index | `/api/books/{bookId}/index` | |
 
@@ -212,8 +232,10 @@ Préfixe `/api`, JSON uniquement. `{bookId}` est l'identifiant numérique du liv
 | `KNOWLEDGE_NOT_FOUND` | 404 | identifiant de connaissance inconnu |
 | `EVENT_NOT_FOUND` | 404 | identifiant d'événement inconnu |
 | `PARTICIPANT_NOT_FOUND` | 404 | lien événement ↔ connaissance inexistant |
+| `RELATION_NOT_FOUND` | 404 | identifiant de relation inconnu |
 | `METHOD_NOT_ALLOWED` | 405 | méthode refusée sur cette route (header `Allow`) |
 | `ID_ALREADY_EXISTS` | 409 | identifiant ou lien déjà pris |
+| `RELATION_ALREADY_EXISTS` | 409 | ces deux fiches ont déjà un état de relation à ce chapitre (`details.existing`) |
 | `REFERENCE_NOT_FOUND` | 409 | un champ pointe vers une ressource inexistante |
 | `TOO_MANY_ATTEMPTS` | 429 | trop de connexions échouées (header `Retry-After`) |
 | `INTERNAL_ERROR` | 500 | erreur serveur inattendue |
@@ -337,11 +359,12 @@ Format du document (les participants peuvent référencer des éléments du docu
 {
   "knowledge": [{ "id": "aldric", "type": "character", "name": "Aldric", "summary": "...", "description": null, "aliases": [] }],
   "events": [{ "id": "evt-0043", "title": "...", "summary": "...", "detail": null, "worldOrder": 43, "worldDate": null, "chapter": 8, "revealed": true, "tags": [] }],
-  "participants": [{ "eventId": "evt-0043", "knowledgeId": "aldric", "role": "author" }]
+  "participants": [{ "eventId": "evt-0043", "knowledgeId": "aldric", "role": "author" }],
+  "relations": [{ "id": "rel-0001", "sourceId": "aldric", "targetId": "mira", "type": "ally", "chapter": null, "revealed": true, "note": null }]
 }
 ```
 
-Les champs facultatifs absents prennent leur valeur par défaut (`null`, `[]`, `revealed: true`) dans l'aperçu.
+La section `relations` est facultative (un ancien export sans elle s'importe toujours) ; ses relations peuvent référencer des fiches du document ou déjà en base. Les champs facultatifs absents prennent leur valeur par défaut (`null`, `[]`, `revealed: true`) dans l'aperçu.
 
 **Export** (`views/ExportView.vue`, `utils/exportDocument.js`) : une page pour télécharger ou copier tout le contenu d'un livre.
 - **Une seule route serveur**, `GET /api/books/{bookId}/export` (session ou clé de ce livre) : trois requêtes SQL qui renvoient toutes les fiches (avec description), tous les événements (avec détail) et tous les liens, dans la forme d'un document d'import. Les formats sont fabriqués dans le navigateur.
@@ -386,6 +409,15 @@ Sans `includeSecrets`, seuls les événements `revealed = true` sont visibles. A
 
 **Tester en local** sans IA : `npx @modelcontextprotocol/inspector`, transport « Streamable HTTP », adresse `http://127.0.0.1:8000/mcp/<clé>`.
 
+### Étape 6 : relations entre fiches (en cours)
+
+Une relation est un **état** daté d'un chapitre (voir la table `knowledge_relation`) ; l'historique d'un couple est la liste de ses états.
+1. **Fait** : `get_related` (fiches liées par les événements partagés).
+2. **Fait** : table, API `/relations`, import et export (section `relations`).
+3. À faire : outils MCP (les relations à jour pour le chapitre demandé dans `get_knowledge`, historique en option ; `get_related` qui fusionne relations explicites et événements partagés).
+4. À faire : page « Relations » dans l'app, calquée sur la chronologie (liste par chapitre, filtres, panneau d'édition, lien depuis une fiche), section « Relations » dans la vérification de l'import et consignes pour l'IA, export Markdown.
+5. À faire : documentation et finitions.
+
 ### Plus tard
 
-Table `relation` bornée dans le temps, recherche sémantique, éventuellement un chat intégré à l'app (il réutiliserait les mêmes outils que le MCP).
+Recherche sémantique, niveau de « canon » des fiches (confirmé, brouillon, idée, abandonné), chapitre en cours réglable sur le livre, éventuellement un chat intégré à l'app (il réutiliserait les mêmes outils que le MCP).

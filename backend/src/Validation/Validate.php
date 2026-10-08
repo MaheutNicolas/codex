@@ -42,6 +42,15 @@ final class Validate
         'role' => '?string',
     ];
 
+    private const RELATION_FIELDS = [
+        'sourceId' => 'string',
+        'targetId' => 'string',
+        'type' => 'string',
+        'chapter' => '?int',
+        'revealed' => 'bool',
+        'note' => '?string',
+    ];
+
     public function __construct(private readonly ValidatorInterface $validator)
     {
     }
@@ -64,6 +73,24 @@ final class Validate
     public function book(array $data): void
     {
         $this->fields($data, ['name' => 'string']);
+    }
+
+    /** A relation needs its two entries and its type to be created; any field can be changed afterwards, except the identifier. */
+    public function relation(array $data, bool $creating): void
+    {
+        $this->fields($data, $creating ? self::RELATION_FIELDS + ['id' => 'string'] : self::RELATION_FIELDS);
+
+        if ($creating) {
+            $missing = [];
+            foreach (['sourceId', 'targetId', 'type'] as $field) {
+                if (!isset($data[$field]) || '' === $data[$field]) {
+                    $missing[$field][] = "The field \"$field\" is required.";
+                }
+            }
+            if ([] !== $missing) {
+                throw new ApiException(ErrorCode::VALIDATION_FAILED, ['fields' => $missing]);
+            }
+        }
     }
 
     /** Creating a link needs both identifiers; updating one can only change its role. */

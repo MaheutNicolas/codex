@@ -25,8 +25,8 @@ final class ImportExportTest extends ApiTestCase
     {
         $created = $this->api('POST', $this->importUrl(), $this->story());
         self::assertSame(200, $created['status']);
-        self::assertSame(['knowledge' => 3, 'events' => 5, 'participants' => 6], $created['data']['created']);
-        self::assertSame(['knowledge' => 0, 'events' => 0, 'participants' => 0], $created['data']['updated']);
+        self::assertSame(['knowledge' => 3, 'events' => 5, 'participants' => 6, 'relations' => 0], $created['data']['created']);
+        self::assertSame(['knowledge' => 0, 'events' => 0, 'participants' => 0, 'relations' => 0], $created['data']['updated']);
 
         // The same identifiers again: everything is updated, nothing is created twice.
         $document = $this->story();
@@ -34,8 +34,8 @@ final class ImportExportTest extends ApiTestCase
         $document['participants'][0]['role'] = 'victim';
         $again = $this->api('POST', $this->importUrl(), $document);
 
-        self::assertSame(['knowledge' => 0, 'events' => 0, 'participants' => 0], $again['data']['created']);
-        self::assertSame(['knowledge' => 3, 'events' => 5, 'participants' => 6], $again['data']['updated']);
+        self::assertSame(['knowledge' => 0, 'events' => 0, 'participants' => 0, 'relations' => 0], $again['data']['created']);
+        self::assertSame(['knowledge' => 3, 'events' => 5, 'participants' => 6, 'relations' => 0], $again['data']['updated']);
         self::assertSame('A very good healer.', $this->api('GET', "/api/books/{$this->bookId}/knowledge/mira")['data']['summary']);
         self::assertSame('victim', $this->api('GET', "/api/books/{$this->bookId}/event-participants/evt-1/aldric")['data']['role']);
         self::assertSame(3, $this->api('GET', "/api/books/{$this->bookId}/knowledge")['data']['total']);
@@ -142,7 +142,7 @@ final class ImportExportTest extends ApiTestCase
         $export = $this->api('GET', "/api/books/{$this->bookId}/export");
 
         self::assertSame(200, $export['status']);
-        self::assertSame(['knowledge', 'events', 'participants'], array_keys($export['data']));
+        self::assertSame(['knowledge', 'events', 'participants', 'relations'], array_keys($export['data']));
         self::assertCount(3, $export['data']['knowledge']);
         self::assertCount(5, $export['data']['events']);
         self::assertCount(6, $export['data']['participants']);
@@ -167,19 +167,19 @@ final class ImportExportTest extends ApiTestCase
         $again = $this->api('POST', $this->importUrl(), $export);
 
         self::assertSame(200, $again['status']);
-        self::assertSame(['knowledge' => 3, 'events' => 5, 'participants' => 6], $again['data']['updated']);
+        self::assertSame(['knowledge' => 3, 'events' => 5, 'participants' => 6, 'relations' => 0], $again['data']['updated']);
 
         // ...and it can fill another, empty book with the same content.
         $other = $this->createBook('Copy');
         $copy = $this->api('POST', "/api/books/$other/import", $export);
-        self::assertSame(['knowledge' => 3, 'events' => 5, 'participants' => 6], $copy['data']['created']);
+        self::assertSame(['knowledge' => 3, 'events' => 5, 'participants' => 6, 'relations' => 0], $copy['data']['created']);
         self::assertSame($export, $this->api('GET', "/api/books/$other/export")['data']);
     }
 
     public function testAnEmptyBookExportsEmptySections(): void
     {
         self::assertSame(
-            ['knowledge' => [], 'events' => [], 'participants' => []],
+            ['knowledge' => [], 'events' => [], 'participants' => [], 'relations' => []],
             $this->api('GET', "/api/books/{$this->bookId}/export")['data'],
         );
     }

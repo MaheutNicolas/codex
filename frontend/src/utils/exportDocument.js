@@ -9,7 +9,12 @@ export function withoutSecrets(document) {
   const events = document.events.filter((event) => event.revealed)
   const kept = new Set(events.map((event) => event.id))
 
-  return { ...document, events, participants: document.participants.filter((link) => kept.has(link.eventId)) }
+  return {
+    ...document,
+    events,
+    participants: document.participants.filter((link) => kept.has(link.eventId)),
+    relations: (document.relations ?? []).filter((relation) => relation.revealed),
+  }
 }
 
 /** Our own format: the same document the import accepts, so that an export can be imported again. */

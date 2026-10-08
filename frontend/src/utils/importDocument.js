@@ -55,6 +55,8 @@ export function parseDocument(text) {
 
   const items = []
   for (const [section, list] of Object.entries(document)) {
+    // An export carries a (possibly empty) list of relations; an empty one is nothing to review.
+    if (section === 'relations' && Array.isArray(list) && list.length === 0) continue
     if (!SECTIONS.includes(section)) return { error: t('import.parse.unknownSection', { section }) }
     if (!Array.isArray(list)) return { error: t('import.parse.notList', { section }) }
     if (list.length > MAX_ITEMS) return { error: t('import.parse.tooMany', { section, max: MAX_ITEMS }) }
