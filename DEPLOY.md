@@ -39,21 +39,26 @@ GRANT ALL PRIVILEGES ON codex.* TO 'codex'@'localhost';
 sudo mkdir -p /var/www/codex && sudo chown $USER: /var/www/codex
 git clone <adresse-du-dépôt-GitHub> /var/www/codex
 cd /var/www/codex/backend
+cp .env.example .env
 ```
 
-**Avant d'installer les dépendances**, créez `backend/.env.local` (non versionné, c'est là que vivent les secrets). Il doit exister d'abord : `composer install` lance `cache:clear`, et sans `APP_ENV=prod` Symfony démarre en mode développement et cherche un outil (MakerBundle) que `--no-dev` n'installe pas.
+`backend/.env` n'est pas dans git (le dépôt ne contient que le modèle `.env.example`) : **Symfony refuse de démarrer sans ce fichier**, même vide. La copie ci-dessus le crée, et vous ne le modifiez pas.
+
+**Avant d'installer les dépendances**, créez aussi `backend/.env.local` (non versionné, c'est là que vivent les secrets et les réglages du serveur). Il doit exister d'abord : `composer install` lance `cache:clear`, et sans `APP_ENV=prod` Symfony démarre en mode développement et cherche un outil (MakerBundle) que `--no-dev` n'installe pas.
 
 ```dotenv
 APP_ENV=prod
 APP_SECRET=<64 caractères aléatoires>
 DATABASE_URL="mysql://codex:UN_MOT_DE_PASSE_LONG@127.0.0.1:3306/codex?serverVersion=mariadb-10.11.14&charset=utf8mb4"
+DEFAULT_URI=https://codexbase.fr
+CORS_ALLOW_ORIGIN='^https://codexbase\.fr$'
 MCP_ALLOWED_HOSTS=localhost,127.0.0.1,[::1],codexbase.fr
 ```
 
 - `APP_SECRET` : `php -r "echo bin2hex(random_bytes(32));"`. Il signe les cookies de connexion ; le changer déconnecte tout le monde.
 - `DATABASE_URL` : le préfixe reste `mysql://` pour MariaDB et pour MySQL. Avec MariaDB, `serverVersion=mariadb-10.11.14` (votre version exacte : `mariadb --version`) ; avec MySQL 8, `serverVersion=8.0`. Cette valeur sert à Doctrine pour choisir le bon dialecte SQL.
-- `MCP_ALLOWED_HOSTS` : les noms de domaine auxquels le serveur MCP répond (séparés par des virgules). `backend/.env` contient déjà `codexbase.fr` ; si vous changez de domaine, mettez-le ici ou dans `.env`. **Sans le bon domaine, le serveur MCP refuse les requêtes** (erreur « Invalid Host header »).
-- `CORS_ALLOW_ORIGIN` n'a pas besoin d'être changé : l'application et l'API sont sur la même origine, il n'y a pas de requête entre origines.
+- `MCP_ALLOWED_HOSTS` : les noms de domaine auxquels le serveur MCP répond (séparés par des virgules). **Sans le bon domaine, le serveur MCP refuse les requêtes** (erreur « Invalid Host header »).
+- `DEFAULT_URI` et `CORS_ALLOW_ORIGIN` doivent être définis (Symfony les lit au démarrage ; sans eux : « Environment variable not found »). Les valeurs ci-dessus suffisent : l'application et l'API sont sur la même origine, aucune requête ne passe d'une origine à l'autre.
 
 Puis :
 
@@ -196,6 +201,8 @@ Vous pouvez aussi exporter chaque livre en JSON depuis la page Export.
 | Symptôme | Où regarder |
 |---|---|
 | `composer install` : `Class "…MakerBundle" not found` (script `cache:clear`) | `backend/.env.local` absent ou sans `APP_ENV=prod`. Créez-le puis relancez `composer install --no-dev --optimize-autoloader` (ou `php bin/console cache:clear`) |
+| `Unable to read the ".env" environment file` | `backend/.env` n'existe pas : `cd backend && cp .env.example .env` (un `git pull` ne le supprime plus, il n'est pas suivi) |
+| `Environment variable not found: "…"` | une variable manque dans `backend/.env.local` (voir l'étape 3), puis `cache:clear` |
 | Page blanche ou erreur 500 | `backend/var/log/prod.log`, `/var/log/nginx/error.log` |
 | 502 Bad Gateway | PHP-FPM arrêté, ou mauvais nom de socket dans `fastcgi_pass` |
 | `Invalid Host header` sur `/mcp` | `MCP_ALLOWED_HOSTS` ne contient pas votre domaine, puis `cache:clear` |

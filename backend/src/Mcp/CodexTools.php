@@ -38,7 +38,7 @@ final class CodexTools
      * "lastChapter", the highest chapter in which an event is told (null if none yet): to continue the story
      * after it, pass atChapter = lastChapter to the other tools.
      *
-     * @param string|null $type Only entries of this type: character, place or system.
+     * @param string|null $type Only entries of this type: character, group, species, place, item, system, ability, concept, rank, theme.
      *
      * @return array<string, mixed>
      */
@@ -59,7 +59,8 @@ final class CodexTools
     /**
      * Reads one entry in full (summary and description) together with the events it takes part in, in the order
      * of the story world, each with the role of the entry (not the other participants: read the event for those).
-     * "events.total" is how many events there are in all; read the next ones with offset. Use an id from index or search.
+     * "events.total" is how many events there are in all; read the next ones with offset (or list all of them
+     * with timeline and knowledgeId, which also shows the other participants). Use an id from index or search.
      *
      * @param string   $id             The id of the entry, e.g. "aldric".
      * @param int|null $atChapter      The reader has read chapters 1 to this one (inclusive): later events are hidden.

@@ -19,7 +19,7 @@ use Symfony\Component\Validator\Constraints as Assert;
 #[ORM\HasLifecycleCallbacks]
 class Knowledge
 {
-    public const TYPES = ['character', 'place', 'system'];
+    public const TYPES = ['character', 'group', 'species', 'place', 'item', 'system', 'ability', 'concept', 'rank', 'theme'];
 
     #[ORM\Id]
     #[ORM\GeneratedValue]

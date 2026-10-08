@@ -62,18 +62,40 @@ export default {
 
   library: {
     title: 'Library',
-    subtitle: 'The characters, places and systems of your story.',
+    subtitle: 'The characters, groups, species, places, items, systems, abilities, concepts, ranks and themes of your story.',
     new: 'New entry',
     search: 'Search a name, an alias…',
     searchLabel: 'Search the library',
     all: 'All',
-    types: { character: 'Character', place: 'Place', system: 'System' },
-    typesPlural: { character: 'Characters', place: 'Places', system: 'Systems' },
+    types: {
+      character: 'Character',
+      group: 'Group',
+      species: 'Species',
+      place: 'Place',
+      item: 'Item',
+      system: 'System',
+      ability: 'Ability',
+      concept: 'Concept',
+      rank: 'Rank',
+      theme: 'Theme',
+    },
+    typesPlural: {
+      character: 'Characters',
+      group: 'Groups',
+      species: 'Species',
+      place: 'Places',
+      item: 'Items',
+      system: 'Systems',
+      ability: 'Abilities',
+      concept: 'Concepts',
+      rank: 'Ranks',
+      theme: 'Themes',
+    },
     count: { one: '{count} entry', other: '{count} entries' },
     aliases: 'Aliases: {list}',
     empty: {
       title: 'No entries yet',
-      text: 'Add your first character, place or system: the library is what the AI will consult to write.',
+      text: 'Add your first entry (a character, a place, a system…): the library is what the AI will consult to write.',
     },
     noResults: {
       title: 'No results',
@@ -263,6 +285,18 @@ export default {
 Rules:
 - "id": lowercase letters without accents, digits and hyphens only (e.g. north-citadel). It is unique.
 - "type" of an entry: one of {types}.
+- Entry types:
+  - "character": a person or a being with a will of its own.
+  - "group": an organisation, faction, family, guild or people.
+  - "species": a species or race of beings.
+  - "place": a place, from a room to a continent.
+  - "item": an object, weapon or artefact.
+  - "system": the rules of how something works (magic, technology, society…).
+  - "ability": a power, skill or technique.
+  - "concept": an idea, belief, law or notion specific to this universe.
+  - "rank": a title, grade or class in a hierarchy.
+  - "theme": a recurring theme or motif of the story.
+- When two types fit, pick the more precise one.
 - "summary": 2 to 3 sentences, this is what the AI reads first. "description" and "detail": the long version, or null.
 - "worldOrder": a whole number giving the order of the events in the world of the story (the smallest happens first). The next free order is {nextOrder}.
 - "chapter": number of the chapter where the reader discovers the event (a whole number, 1 or more), or null if it is not told.

@@ -23,8 +23,8 @@ Paquets installés : `symfony/orm-pack`, `symfony/serializer`, `symfony/validato
 
 ## Installation locale
 
-1. `cd backend` puis `composer install`
-2. Créer `backend/.env.local` (non versionné) avec l'URL de la base :
+1. `cd backend`, créer `.env` comme à l'étape 2 (Symfony en a besoin pour que `composer install` aille au bout), puis `composer install`
+2. `cp .env.example .env` : `backend/.env` n'est **pas versionné** (le dépôt n'a que le modèle `.env.example`) et Symfony refuse de démarrer sans lui. Il donne les valeurs par défaut du développement (base MySQL locale `codex`, sans mot de passe). Pour une autre base ou d'autres valeurs, les mettre dans `backend/.env.local` (non versionné non plus), qui l'emporte, par exemple :
    `DATABASE_URL="mysql://root:@127.0.0.1:3306/codex?serverVersion=8.0&charset=utf8mb4"`
 3. **Production uniquement** : définir un `APP_SECRET` aléatoire de 64 caractères (`php -r "echo bin2hex(random_bytes(32));"`) dans le `backend/.env.local` du serveur ou en variable d'environnement. Il signe les cookies de connexion : il est **obligatoire** en production (le `.env` versionné le laisse vide) et le changer déconnecte tout le monde. En développement, `backend/.env.dev` (versionné, valeur sans importance) en fournit un.
 4. `php bin/console doctrine:database:create --if-not-exists`
@@ -49,7 +49,7 @@ Paquets installés : `symfony/orm-pack`, `symfony/serializer`, `symfony/validato
 ## Modèle de données
 
 Un **compte** (`user`) possède des **livres** (`book`). Chaque livre contient deux groupes de données :
-- **Connaissances** : la table `knowledge`, une seule table pour toutes les catégories (personnage, lieu, système…). Ajouter une catégorie = ajouter une valeur de `type` (constante `Knowledge::TYPES`), sans changer la structure.
+- **Connaissances** : la table `knowledge`, une seule table pour toutes les catégories (personnage, groupe, espèce, lieu, objet, système, capacité, concept, rang, thème). Ajouter une catégorie = ajouter une valeur de `type` (constante `Knowledge::TYPES`), sans changer la structure.
 - **Chronologie** : la table `event`, reliée aux connaissances par `event_participant`.
 
 Les connaissances et les événements ont une **clé technique** entière (jamais exposée) et un **slug** lisible, unique dans un livre : l'API l'expose sous le nom `id` (`aldric`, `evt-0042`). Deux livres peuvent donc contenir chacun un `aldric`.
@@ -91,7 +91,7 @@ Donne à une IA ou à un script l'accès à un livre. **Un livre a exactement un
 | id | int (PK, auto) | clé technique, non exposée |
 | book | ManyToOne Book | onDelete CASCADE |
 | slug | string | exposé comme `id` : `aldric`, `citadelle-nord` ; unique avec le livre |
-| type | string | `character`, `place`, `system` |
+| type | string | `character`, `group`, `species`, `place`, `item`, `system`, `ability`, `concept`, `rank`, `theme` (constante `Knowledge::TYPES`) |
 | name | string | |
 | summary | text | 2-3 phrases, ce que l'IA lit en premier |
 | description | text, nullable | version longue, chargée à la demande |
@@ -256,7 +256,7 @@ Décisions prises :
 **Bibliothèque** (`views/LibraryView.vue`, `components/library/KnowledgePanel.vue`) :
 - **Liste** : toutes les fiches du livre (nom, type, alias, résumé), triées par nom, chargées d'un coup (par pages de 200 si besoin). La liste de l'API renvoie les alias pour permettre la recherche.
 - **Recherche** instantanée, côté navigateur, **sans tenir compte des accents ni de la casse** (« resonance » trouve « La Résonance »). Elle porte sur le nom, les alias, l'identifiant et le résumé ; les résultats sont classés (nom qui commence par la recherche, nom qui la contient, alias, reste). Les touches `/` et `Ctrl+K` placent le curseur dans la recherche.
-- **Filtres par type** (Personnages, Lieux, Systèmes) avec le nombre de fiches de chaque type.
+- **Filtres par type** (Personnages, Groupes, Espèces, Lieux, Objets, Systèmes, Capacités, Concepts, Rangs, Thèmes) avec le nombre de fiches de chaque type.
 - **Panneau latéral** pour créer ou modifier une fiche, piloté par l'adresse : `?entry=aldric` ouvre une fiche, `?new` ouvre la création, donc un lien direct ou le bouton « précédent » fonctionnent. Champs : nom, type, identifiant, résumé, description, alias (étiquettes : Entrée ou virgule pour ajouter, Retour arrière pour retirer, doublons ignorés).
 - **Identifiant** : à la création il se déduit du nom (« Citadelle du Nord » donne `citadelle-du-nord`) tant qu'on ne l'a pas modifié à la main ; il est en lecture seule ensuite. « Enregistrer et créer une autre » enchaîne les saisies sans fermer le panneau.
 - **Validation** en français dans le navigateur (champs obligatoires, format de l'identifiant) ; erreur effacée dès que le champ est modifié ; identifiant déjà pris signalé sous le champ.

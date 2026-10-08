@@ -63,18 +63,40 @@ export default {
 
   library: {
     title: 'Bibliothèque',
-    subtitle: 'Les personnages, lieux et systèmes de votre histoire.',
+    subtitle: 'Les personnages, groupes, espèces, lieux, objets, systèmes, capacités, concepts, rangs et thèmes de votre histoire.',
     new: 'Nouvelle fiche',
     search: 'Rechercher un nom, un alias…',
     searchLabel: 'Rechercher dans la bibliothèque',
     all: 'Toutes',
-    types: { character: 'Personnage', place: 'Lieu', system: 'Système' },
-    typesPlural: { character: 'Personnages', place: 'Lieux', system: 'Systèmes' },
+    types: {
+      character: 'Personnage',
+      group: 'Groupe',
+      species: 'Espèce',
+      place: 'Lieu',
+      item: 'Objet',
+      system: 'Système',
+      ability: 'Capacité',
+      concept: 'Concept',
+      rank: 'Rang',
+      theme: 'Thème',
+    },
+    typesPlural: {
+      character: 'Personnages',
+      group: 'Groupes',
+      species: 'Espèces',
+      place: 'Lieux',
+      item: 'Objets',
+      system: 'Systèmes',
+      ability: 'Capacités',
+      concept: 'Concepts',
+      rank: 'Rangs',
+      theme: 'Thèmes',
+    },
     count: { one: '{count} fiche', other: '{count} fiches' },
     aliases: 'Alias : {list}',
     empty: {
       title: "Aucune fiche pour l'instant",
-      text: 'Ajoutez votre premier personnage, lieu ou système : la bibliothèque est ce que l\'IA consultera pour écrire.',
+      text: 'Ajoutez votre première fiche (un personnage, un lieu, un système…) : la bibliothèque est ce que l\'IA consultera pour écrire.',
     },
     noResults: {
       title: 'Aucun résultat',
@@ -264,6 +286,18 @@ export default {
 Règles :
 - "id" : lettres minuscules sans accent, chiffres et tirets uniquement (ex. citadelle-nord). Il est unique.
 - "type" d'une fiche : un parmi {types}.
+- Types de fiches :
+  - "character" : une personne ou un être doté de volonté.
+  - "group" : une organisation, faction, famille, guilde, peuple.
+  - "species" : une espèce ou une race d'êtres.
+  - "place" : un lieu, de la pièce au continent.
+  - "item" : un objet, une arme, un artefact.
+  - "system" : les règles d'un fonctionnement (magie, technologie, société…).
+  - "ability" : un pouvoir, une compétence, une technique.
+  - "concept" : une idée, croyance, loi ou notion propre à cet univers.
+  - "rank" : un titre, grade ou classe dans une hiérarchie.
+  - "theme" : un thème ou motif récurrent de l'histoire.
+- En cas de doute entre deux types, choisis le plus précis.
 - "summary" : 2 à 3 phrases, c'est ce que l'IA lit en premier. "description" et "detail" : la version longue, ou null.
 - "worldOrder" : nombre entier qui donne l'ordre des événements dans le monde de l'histoire (le plus petit arrive en premier). Le prochain ordre libre est {nextOrder}.
 - "chapter" : numéro du chapitre où le lecteur découvre l'événement (entier, 1 ou plus), ou null s'il n'est pas raconté.

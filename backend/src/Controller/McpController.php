@@ -56,7 +56,7 @@ final class McpController
         $server = Server::builder()
             ->setServerInfo('Codex', '1.0.0')
             ->setInstructions(
-                'Codex is the library of a book being written: its characters, places and systems (entries), and the '
+                'Codex is the library of a book being written: its entries (characters, groups, species, places, items, systems, abilities, concepts, ranks, themes), and the '
                 .'events of its timeline. Read it to stay consistent with the story. Start with search or index to find '
                 .'the id of an entry, then read it with get_knowledge. index also tells how far the story has been written '
                 .'(lastChapter): to continue it, pass atChapter = lastChapter; to rewrite a given chapter, pass '
