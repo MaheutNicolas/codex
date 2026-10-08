@@ -1,4 +1,4 @@
-import { KNOWLEDGE_TYPES } from '@/constants'
+import { KNOWLEDGE_TYPES, RELATION_TYPES } from '@/constants'
 import { t } from '@/locales'
 import { slugify } from '@/utils/text'
 
@@ -27,6 +27,51 @@ function typeLabel(type) {
   return label === key ? type : label
 }
 
+/**
+ * The relations of each entry, grouped by the entry on the other side, as lines of text: the states of a pair in
+ * order of chapter ("Allies (from the start) → Enemies (ch. 6)"). A relation that reads one way (a mentor, a
+ * member...) is written as a sentence that names both entries, so that its direction cannot be misread.
+ */
+function relationLines(document, names) {
+  const byEntry = new Map()
+  const add = (entry, partner, state) => {
+    if (!byEntry.has(entry)) byEntry.set(entry, new Map())
+    const partners = byEntry.get(entry)
+    if (!partners.has(partner)) partners.set(partner, [])
+    partners.get(partner).push(state)
+  }
+  for (const relation of document.relations ?? []) {
+    add(relation.sourceId, relation.targetId, relation)
+    add(relation.targetId, relation.sourceId, relation)
+  }
+
+  const name = (id) => names.get(id) ?? id
+  const describe = (state) => {
+    const symmetric = RELATION_TYPES.find(({ value }) => value === state.type)?.symmetric ?? true
+    const what = symmetric
+      ? t(`relations.types.${state.type}`)
+      : t(`relations.sentences.${state.type}`, { source: name(state.sourceId), target: name(state.targetId) })
+    const when = state.chapter === null ? t('export.md.fromStart') : t('export.md.sinceChapter', { number: state.chapter })
+
+    return `${what} (${when}${state.revealed ? '' : ` · ${t('export.md.secret')}`})${state.note ? ` — ${state.note}` : ''}`
+  }
+
+  const lines = new Map()
+  for (const [entry, partners] of byEntry) {
+    lines.set(
+      entry,
+      [...partners]
+        .map(([partner, states]) => {
+          states.sort((a, b) => (a.chapter ?? 0) - (b.chapter ?? 0) || (a.id < b.id ? -1 : 1))
+          return `- ${name(partner)} : ${states.map(describe).join(' → ')}`
+        })
+        .sort(),
+    )
+  }
+
+  return lines
+}
+
 /** A readable document: the library by type, then the timeline in the order of the world. */
 export function toMarkdown(document, bookName) {
   const names = new Map(document.knowledge.map((entry) => [entry.id, entry.name]))
@@ -37,6 +82,7 @@ export function toMarkdown(document, bookName) {
     links.get(link.eventId).push(link.role ? `${name} (${link.role})` : name)
   }
 
+  const relations = relationLines(document, names)
   const lines = [`# ${bookName}`, '']
 
   lines.push(`## ${t('export.md.library')}`, '')
@@ -51,6 +97,7 @@ export function toMarkdown(document, bookName) {
       if (entry.aliases.length) lines.push(`**${t('library.aliases', { list: entry.aliases.join(', ') })}**`, '')
       lines.push(entry.summary, '')
       if (entry.description) lines.push(entry.description, '')
+      if (relations.has(entry.id)) lines.push(`**${t('export.md.relations')}**`, '', ...relations.get(entry.id), '')
     }
   }
 

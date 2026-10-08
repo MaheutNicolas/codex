@@ -316,6 +316,12 @@ Décisions prises :
 - **Panneau latéral** piloté par l'adresse (`?event=evt-0042`, `?new`), comme la bibliothèque. À la création, l'identifiant (`evt-NNNN` suivant) et l'ordre (dernier + 1) sont pré-remplis.
 - **Participants** : chargés à l'ouverture du panneau seulement (`event-participants?eventId=`), pas dans la liste. Le sélecteur est alimenté par `GET /index`. Les ajouts, retraits et changements de rôle sont envoyés à l'enregistrement, après l'événement.
 
+**Relations** (`views/RelationsView.vue`, `components/relations/RelationPanel.vue`, `utils/relations.js`) : la page des états de relation, calquée sur la chronologie.
+- **Liste par chapitre** : chaque ligne est un état (« Aldric et Mira sont ennemis », chapitre 6), le début du livre en premier, avec un espace où le chapitre change. Les états secrets ont une bordure en pointillés et un badge ; le badge « Dernier état » marque l'état en vigueur à la fin du livre pour chaque couple.
+- **Filtres** : par fiche (ses relations des deux côtés), puis « avec » une seconde fiche (les seules proposées sont celles qui ont une relation avec la première) pour suivre l'**évolution d'un couple** ; par type ; connues ou secrètes. Les deux fiches se règlent aussi par l'adresse (`?character=aldric&with=mira`) : la bibliothèque y renvoie avec « Voir ses relations » dans le panneau d'une fiche.
+- **Panneau latéral** (`?relation=rel-0001`, `?new`) : les deux fiches côte à côte avec un bouton pour les inverser, le type, le chapitre (vide : dès le début), la case « le lecteur le sait déjà », une note et l'identifiant (`rel-NNNN` suggéré). Une **phrase d'aperçu** (« Corvin est le mentor d'Aldric. ») évite de se tromper de sens pour mentor, parent, membre de, chef de, au service de, et la liste des **autres états du couple** montre où le nouvel état s'insère. Un chapitre déjà occupé par ce couple est refusé avec le nom de l'état en conflit. Le raccourci `n` crée une relation.
+- Une relation qui change n'est pas modifiée : on **ajoute un état** au chapitre où elle change, et on la termine avec le type « Plus de lien ».
+
 **Lancer en développement** (deux terminaux) :
 - `cd backend` puis `symfony serve` (ou `php -S 127.0.0.1:8000 -t public`) ;
 - `cd frontend` puis `npm install` (la première fois) et `npm run dev`, puis ouvrir http://localhost:5173.
@@ -350,10 +356,12 @@ Vite redirige `/api` et `/health` vers le backend (`vite.config.js`) : l'app et 
 **Import** (`views/ImportView.vue`, `components/import/`, `utils/importDocument.js`) : l'IA produit un document JSON, on le colle, on le vérifie et on le corrige dans le navigateur, puis on l'envoie d'un coup. Le maximum se passe dans le navigateur, le serveur reste simple.
 1. **Consignes** : un texte à copier pour l'IA, **généré dans le navigateur** (`import.instructions.text` dans `fr.js`) à partir des fiches et événements déjà présents (identifiants et noms), pour qu'elle les réutilise sans créer de doublons. Il donne le format exact et les règles.
 2. **Coller** la réponse de l'IA. Une clôture ```` ```json ```` autour du document est retirée. Un texte illisible ou un mauvais gabarit (section inconnue, section qui n'est pas une liste…) est signalé en français sous la zone de texte.
-3. **Vérifier** : une page liste chaque élément (fiches, événements, participants) avec son statut (nouveau, mise à jour, déjà présent et ignoré) et ses erreurs, **calculées dans le navigateur** (`validateItem` : champs obligatoires, types, format des identifiants, type de fiche, doublons, références vers une fiche ou un événement du livre ou de l'import). Chaque élément peut être décoché, retiré ou corrigé dans un panneau latéral ; un élément qui existe déjà est décoché par défaut. « Importer » reste désactivé tant qu'un élément coché a une erreur. Revenir au texte après des corrections demande confirmation.
+3. **Vérifier** : une page liste chaque élément (fiches, événements, participants, relations) avec son statut (nouveau, mise à jour, déjà présent et ignoré) et ses erreurs, **calculées dans le navigateur** (`validateItem` : champs obligatoires, types, format des identifiants, type de fiche, doublons, références vers une fiche ou un événement du livre ou de l'import). Chaque élément peut être décoché, retiré ou corrigé dans un panneau latéral ; un élément qui existe déjà est décoché par défaut. « Importer » reste désactivé tant qu'un élément coché a une erreur. Revenir au texte après des corrections demande confirmation.
 4. **Importer** : `POST /api/books/{bookId}/import` avec le document final, **atomique** (une transaction : tout ou rien). Un élément dont l'identifiant existe déjà est mis à jour, les autres sont créés ; les liens sont mis à jour (rôle) ou créés. La réponse donne `created` et `updated` par section.
 
 **Rôle du serveur** (`ImportService`) : il ne détaille pas les erreurs de forme. Un corps qui n'est pas du JSON, une section inconnue, une section qui n'est pas une liste ou un élément qui n'est pas un objet donnent `INVALID_JSON`. Si le document est valide mais que l'écriture échoue (champ invalide, identifiant déjà pris, référence introuvable), l'erreur porte la **raison** et `details.path` (par exemple `events[2]`), et rien n'est écrit. L'interface affiche la raison et surligne l'élément. Les écritures réutilisent les services (`KnowledgeService`, `EventService`, `EventParticipantService`) donc les règles de `Validate`. Limite : 1000 éléments par section.
+
+**Relations dans l'import.** Une section « Relations » s'ajoute à la vérification, avec le même principe : la phrase de la relation, son chapitre, son statut (nouvelle, mise à jour), ses erreurs. Sont vérifiés dans le navigateur : les deux fiches existent (dans le livre ou dans l'import) et sont différentes, le type est connu, le chapitre est un entier d'au moins 1 ou vide, et **un couple n'a qu'un état par chapitre**, dans l'import comme par rapport aux états déjà dans le livre. Les consignes données à l'IA décrivent le format, la règle « une relation qui change reçoit un nouvel état », `none` pour y mettre fin, le sens des types orientés, et listent les relations déjà présentes.
 
 Format du document (les participants peuvent référencer des éléments du document ou déjà en base) :
 
@@ -371,8 +379,8 @@ La section `relations` est facultative (un ancien export sans elle s'importe tou
 **Export** (`views/ExportView.vue`, `utils/exportDocument.js`) : une page pour télécharger ou copier tout le contenu d'un livre.
 - **Une seule route serveur**, `GET /api/books/{bookId}/export` (session ou clé de ce livre) : trois requêtes SQL qui renvoient toutes les fiches (avec description), tous les événements (avec détail) et tous les liens, dans la forme d'un document d'import. Les formats sont fabriqués dans le navigateur.
 - **JSON (Codex)** : le document tel quel, que l'import accepte à nouveau (sauvegarde, transfert vers un autre livre).
-- **Markdown** : un document lisible, la bibliothèque groupée par type puis la chronologie dans l'ordre du monde, avec identifiants, alias, participants (et leur rôle) et étiquettes. Les libellés suivent la langue de l'interface.
-- **Événements secrets** : une case (cochée par défaut) les retire, ainsi que leurs liens, pour ne pas révéler au lecteur ou à une IA ce qui n'est pas encore connu.
+- **Markdown** : un document lisible, la bibliothèque groupée par type puis la chronologie dans l'ordre du monde, avec identifiants, alias, participants (et leur rôle) et étiquettes. Les libellés suivent la langue de l'interface. Chaque fiche affiche ses relations, une ligne par fiche liée avec la progression du couple (« Mira : Alliés (dès le début) → Ennemis (ch. 6) → Plus de lien (ch. 9) ») ; une relation qui a un sens (mentor, membre de…) est écrite en phrase.
+- **Événements secrets** : une case (cochée par défaut) les retire, ainsi que leurs liens et les relations secrètes, pour ne pas révéler au lecteur ou à une IA ce qui n'est pas encore connu.
 - Un aperçu du fichier est affiché ; boutons « Télécharger » (fichier `nom-du-livre-date.json` ou `.md`) et « Copier ».
 
 ### Étape 4 : routes pour l'IA (terminée)
@@ -421,7 +429,7 @@ Une relation est un **état** daté d'un chapitre (voir la table `knowledge_rela
 1. **Fait** : `get_related` (fiches liées par les événements partagés).
 2. **Fait** : table, API `/relations`, import et export (section `relations`).
 3. **Fait** : outils MCP (`relations` dans `get_knowledge`, nouvel outil `get_relations`, `get_related` qui fusionne relations et événements partagés).
-4. À faire : page « Relations » dans l'app, calquée sur la chronologie (liste par chapitre, filtres, panneau d'édition, lien depuis une fiche), section « Relations » dans la vérification de l'import et consignes pour l'IA, export Markdown.
+4. **Fait** : page « Relations » dans l'app (liste par chapitre, filtres par fiche et par couple, panneau d'édition, lien depuis une fiche), section « Relations » dans la vérification de l'import avec les consignes pour l'IA, relations dans l'export Markdown.
 5. À faire : documentation et finitions.
 
 ### Plus tard

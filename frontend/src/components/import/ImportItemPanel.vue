@@ -5,7 +5,7 @@ import UiDialog from '@/components/ui/UiDialog.vue'
 import UiField from '@/components/ui/UiField.vue'
 import UiSelect from '@/components/ui/UiSelect.vue'
 import UiTagInput from '@/components/ui/UiTagInput.vue'
-import { KNOWLEDGE_TYPES } from '@/constants'
+import { KNOWLEDGE_TYPES, RELATION_TYPES } from '@/constants'
 import { t } from '@/locales'
 
 const props = defineProps({
@@ -17,6 +17,9 @@ const props = defineProps({
 const emit = defineEmits(['close', 'apply'])
 
 const typeOptions = computed(() => KNOWLEDGE_TYPES.map(({ value }) => ({ value, label: t(`library.types.${value}`) })))
+const relationTypeOptions = computed(() =>
+  RELATION_TYPES.map(({ value }) => ({ value, label: t(`relations.types.${value}`) })),
+)
 
 const form = reactive({})
 const errors = reactive({})
@@ -54,6 +57,16 @@ watch(
         revealed: d.revealed !== false,
         tags: list(d.tags),
       })
+    } else if (item.section === 'relations') {
+      Object.assign(form, {
+        id: text(d.id),
+        sourceId: text(d.sourceId),
+        targetId: text(d.targetId),
+        type: text(d.type) || RELATION_TYPES[0].value,
+        chapter: text(d.chapter),
+        revealed: d.revealed !== false,
+        note: text(d.note),
+      })
     } else {
       Object.assign(form, { eventId: text(d.eventId), knowledgeId: text(d.knowledgeId), role: text(d.role) })
     }
@@ -87,6 +100,17 @@ function build() {
       chapter: form.chapter.trim() ? asNumber(form.chapter) : null,
       revealed: form.revealed,
       tags: form.tags,
+    }
+  }
+  if (props.item.section === 'relations') {
+    return {
+      id: form.id.trim(),
+      sourceId: form.sourceId.trim(),
+      targetId: form.targetId.trim(),
+      type: form.type,
+      chapter: form.chapter.trim() ? asNumber(form.chapter) : null,
+      revealed: form.revealed,
+      note: orNull(form.note),
     }
   }
   return { eventId: form.eventId.trim(), knowledgeId: form.knowledgeId.trim(), role: orNull(form.role) }
@@ -196,6 +220,42 @@ function clear(field) {
           :label="t('timeline.form.tags')"
           :hint="t('timeline.form.tagsHint')"
           :placeholder="t('timeline.form.tagsPlaceholder')"
+        />
+      </template>
+
+      <template v-else-if="item.section === 'relations'">
+        <UiField
+          v-model="form.sourceId"
+          :label="t('relations.form.source')"
+          :hint="t('import.edit.knowledgeIdHint')"
+          :error="errors.sourceId"
+          @update:model-value="clear('sourceId')"
+        />
+        <UiField
+          v-model="form.targetId"
+          :label="t('relations.form.target')"
+          :hint="t('import.edit.knowledgeIdHint')"
+          :error="errors.targetId"
+          @update:model-value="clear('targetId')"
+        />
+        <UiSelect v-model="form.type" :label="t('relations.form.type')" :options="relationTypeOptions" :error="errors.type" />
+        <UiField
+          v-model="form.chapter"
+          :label="t('relations.form.chapter')"
+          :hint="t('relations.form.chapterHint')"
+          :error="errors.chapter"
+          @update:model-value="clear('chapter')"
+        />
+        <label class="c-check">
+          <input v-model="form.revealed" type="checkbox" class="c-check__input" />
+          <span class="c-check__text">{{ t('relations.form.revealed') }}</span>
+        </label>
+        <UiField v-model="form.note" :label="t('relations.form.note')" :error="errors.note" />
+        <UiField
+          v-model="form.id"
+          :label="t('relations.form.id')"
+          :error="errors.id"
+          @update:model-value="clear('id')"
         />
       </template>
 

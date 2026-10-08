@@ -1,11 +1,11 @@
-import { KNOWLEDGE_TYPES } from '@/constants'
+import { KNOWLEDGE_TYPES, RELATION_TYPES } from '@/constants'
 import { t } from '@/locales'
 import { SLUG_PATTERN } from '@/utils/text'
 
 // The shape of an import document. The server only says "invalid JSON" when this shape is wrong
 // and reports the first problem it meets while saving: everything else is checked here.
 
-export const SECTIONS = ['knowledge', 'events', 'participants']
+export const SECTIONS = ['knowledge', 'events', 'participants', 'relations']
 
 // The fields of each section with the value used when the document leaves them out.
 const FIELDS = {
@@ -22,6 +22,7 @@ const FIELDS = {
     tags: [],
   },
   participants: { eventId: undefined, knowledgeId: undefined, role: null },
+  relations: { id: undefined, sourceId: undefined, targetId: undefined, type: undefined, chapter: null, revealed: true, note: null },
 }
 
 export const fieldNames = (section) => Object.keys(FIELDS[section])
@@ -55,8 +56,6 @@ export function parseDocument(text) {
 
   const items = []
   for (const [section, list] of Object.entries(document)) {
-    // An export carries a (possibly empty) list of relations; an empty one is nothing to review.
-    if (section === 'relations' && Array.isArray(list) && list.length === 0) continue
     if (!SECTIONS.includes(section)) return { error: t('import.parse.unknownSection', { section }) }
     if (!Array.isArray(list)) return { error: t('import.parse.notList', { section }) }
     if (list.length > MAX_ITEMS) return { error: t('import.parse.tooMany', { section, max: MAX_ITEMS }) }
@@ -71,7 +70,7 @@ export function parseDocument(text) {
 
   if (items.length === 0) return { error: t('import.parse.empty') }
 
-  // Keep the document's order but group by section, so that the review reads knowledge, events, links.
+  // Keep the document's order but group by section, so that the review reads knowledge, events, links, relations.
   items.sort((a, b) => SECTIONS.indexOf(a.section) - SECTIONS.indexOf(b.section))
 
   return { items }
@@ -88,6 +87,15 @@ function defaultsOf(section) {
 /** The key that tells two items of a section apart: an identifier, or the pair of a participant link. */
 export const itemKey = (item) =>
   item.section === 'participants' ? `${item.data.eventId}|${item.data.knowledgeId}` : String(item.data.id)
+
+/**
+ * The key of a state of a relation: the pair of entries (whichever side each is on) and the chapter, 0 for the start
+ * of the book. A pair has one state per chapter.
+ */
+export function relationPairKey(data) {
+  const [low, high] = [String(data.sourceId), String(data.targetId)].sort()
+  return `${low}|${high}|${Number.isInteger(data.chapter) ? data.chapter : 0}`
+}
 
 const isString = (value) => typeof value === 'string'
 const isStringList = (value) => Array.isArray(value) && value.every(isString)
@@ -152,6 +160,30 @@ export function validateItem(item, context) {
     }
     if (typeof data.revealed !== 'boolean') fail('revealed', 'boolean')
     list('tags')
+  } else if (section === 'relations') {
+    slug('id')
+    for (const field of ['sourceId', 'targetId']) {
+      required(field, 100)
+      if (!errors[field] && !context.availableKnowledge.has(data[field])) fail(field, 'unknownKnowledge')
+    }
+    if (!errors.sourceId && !errors.targetId && data.sourceId === data.targetId) fail('targetId', 'sameEntry')
+    required('type', 20)
+    if (!errors.type && !RELATION_TYPES.some(({ value }) => value === data.type)) {
+      fail('type', 'relationType', { types: RELATION_TYPES.map(({ value }) => value).join(', ') })
+    }
+    if (data.chapter !== null && data.chapter !== undefined) {
+      if (!Number.isInteger(data.chapter) || data.chapter < 1 || data.chapter > INT_MAX) fail('chapter', 'chapter')
+    }
+    if (typeof data.revealed !== 'boolean') fail('revealed', 'boolean')
+    optionalText('note', 500)
+
+    // One state per pair and chapter: in the import itself, and against the states already in the book.
+    if (!errors.sourceId && !errors.targetId && !errors.chapter) {
+      const pair = relationPairKey(data)
+      if (context.duplicates.has('relations-pair:' + pair)) fail('chapter', 'pairDuplicate')
+      const taken = context.relationPairs?.get(pair)
+      if (taken && taken !== data.id) fail('chapter', 'pairExists', { existing: taken })
+    }
   } else {
     required('eventId', 100)
     required('knowledgeId', 100)

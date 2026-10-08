@@ -20,6 +20,7 @@ export default {
     books: 'Mes livres',
     library: 'Bibliothèque',
     timeline: 'Chronologie',
+    relations: 'Relations',
     keys: "Clé d'API",
     import: 'Import',
     export: 'Export',
@@ -120,6 +121,8 @@ export default {
       aliasesHint: 'Autres noms ou surnoms. Entrée ou virgule pour ajouter.',
       aliasesPlaceholder: 'Ajouter un alias…',
       removeAlias: "Retirer l'alias {alias}",
+      viewRelations: 'Voir ses relations',
+      viewRelationsSave: "Enregistrez d'abord vos modifications.",
       saveAndNext: 'Enregistrer et créer une autre',
       errors: {
         nameRequired: 'Le nom est obligatoire.',
@@ -224,6 +227,108 @@ export default {
     keepEditing: 'Continuer la saisie',
   },
 
+  relations: {
+    title: 'Relations',
+    subtitle: "L'évolution des liens entre les fiches : chaque ligne est un état de la relation à partir d'un chapitre.",
+    new: 'Nouvelle relation',
+    character: 'Fiche',
+    allCharacters: 'Toutes les fiches',
+    with: 'Avec',
+    anyone: 'Toutes',
+    typeLabel: 'Type',
+    allTypes: 'Tous les types',
+    visibility: { all: 'Toutes', revealed: 'Connues', secret: 'Secrètes' },
+    count: { one: '{count} état', other: '{count} états' },
+    fromStart: 'Dès le début',
+    chapter: 'Chapitre {number}',
+    secret: 'Secrète',
+    latest: 'Dernier état',
+    searchHint: 'Choisissez une fiche pour suivre l’évolution de ses relations, puis une seconde pour voir celles d’un couple.',
+    empty: {
+      title: "Aucune relation pour l'instant",
+      text: "Ajoutez la première : alliés dès le début, ennemis au chapitre 6… Une relation qui change n'est pas modifiée, on ajoute un nouvel état au chapitre où elle change.",
+    },
+    noResults: {
+      title: 'Aucun résultat',
+      text: 'Aucune relation ne correspond à ces critères.',
+      reset: 'Effacer les filtres',
+    },
+    types: {
+      ally: 'Alliés',
+      enemy: 'Ennemis',
+      rival: 'Rivaux',
+      friend: 'Amis',
+      family: 'Famille',
+      partner: 'Partenaires',
+      mentor: 'Mentor',
+      parent: 'Parent',
+      member_of: 'Membre de',
+      leader_of: 'Chef de',
+      serves: 'Au service de',
+      other: 'Autre lien',
+      none: 'Plus de lien',
+    },
+    sentences: {
+      ally: '{source} et {target} sont alliés.',
+      enemy: '{source} et {target} sont ennemis.',
+      rival: '{source} et {target} sont rivaux.',
+      friend: '{source} et {target} sont amis.',
+      family: '{source} et {target} sont de la même famille.',
+      partner: '{source} et {target} sont partenaires.',
+      mentor: '{source} est le mentor de {target}.',
+      parent: '{source} est un parent de {target}.',
+      member_of: '{source} est membre de {target}.',
+      leader_of: '{source} dirige {target}.',
+      serves: '{source} est au service de {target}.',
+      other: '{source} et {target} sont liés.',
+      none: "{source} et {target} n'ont plus de lien.",
+    },
+    form: {
+      createTitle: 'Nouvelle relation',
+      editTitle: 'Modifier la relation',
+      source: 'Première fiche',
+      target: 'Seconde fiche',
+      pick: 'Choisir une fiche…',
+      type: 'Relation',
+      typeHint: 'Pour « mentor », « parent », « membre de », « chef de » et « au service de », la première fiche est celle qui est mentor, parent, membre… de la seconde.',
+      swap: 'Inverser les deux fiches',
+      preview: 'Aperçu',
+      chapter: 'À partir du chapitre',
+      chapterHint: "Vide : dès le début du livre. L'état tient jusqu'au prochain état de ce couple.",
+      revealed: 'Le lecteur le sait déjà',
+      revealedHint: 'Décochez pour une relation secrète (alliance cachée, parenté tue…).',
+      note: 'Note',
+      noteHint: 'Facultatif : une nuance en une phrase.',
+      id: 'Identifiant',
+      idHint: "C'est l'adresse de la relation, utilisée par l'IA. Il ne pourra plus être modifié.",
+      idLocked: "L'identifiant d'une relation existante ne peut pas être modifié.",
+      history: 'Autres états de ce couple',
+      historyNone: 'Aucun autre état pour ce couple.',
+      saveAndNext: 'Enregistrer et en ajouter une autre',
+      errors: {
+        sourceRequired: 'Choisissez la première fiche.',
+        targetRequired: 'Choisissez la seconde fiche.',
+        sameEntry: 'Choisissez deux fiches différentes.',
+        typeRequired: 'Choisissez un type de relation.',
+        chapterInvalid: 'Saisissez un numéro de chapitre (1 ou plus), ou laissez vide.',
+        noteTooLong: 'La note ne peut pas dépasser 500 caractères.',
+        idRequired: "L'identifiant est obligatoire.",
+        idFormat: 'Lettres minuscules, chiffres et tirets uniquement (ex. rel-0042).',
+        idExists: 'Cet identifiant est déjà utilisé dans ce livre.',
+        pairExists: 'Ces deux fiches ont déjà un état à ce chapitre ({existing}) : modifiez-le ou choisissez un autre chapitre.',
+      },
+    },
+    created: 'Relation créée.',
+    saved: 'Relation enregistrée.',
+    deleted: 'Relation supprimée.',
+    deleteTitle: 'Supprimer cette relation ?',
+    deleteText: "Cet état de la relation sera supprimé définitivement : {sentence} L'état précédent du couple, s'il existe, tiendra de nouveau.",
+    discardTitle: 'Abandonner les modifications ?',
+    discardText: 'Les changements non enregistrés seront perdus.',
+    discard: 'Abandonner',
+    keepEditing: 'Continuer la saisie',
+  },
+
   keys: {
     title: "Clé d'API",
     subtitle: "La clé qui permet à une IA ou à un script de lire ce livre.",
@@ -262,7 +367,7 @@ export default {
       title: '2. Coller sa réponse',
       text: "Collez ici le document JSON renvoyé par l'IA. Rien n'est enregistré avant l'étape de vérification.",
       label: "Réponse de l'IA",
-      placeholder: '{ "knowledge": [], "events": [], "participants": [] }',
+      placeholder: '{ "knowledge": [], "events": [], "participants": [], "relations": [] }',
       analyse: 'Vérifier',
     },
     instructions: {
@@ -280,6 +385,9 @@ export default {
   ],
   "participants": [
     { "eventId": "evt-0043", "knowledgeId": "aldric", "role": "author" }
+  ],
+  "relations": [
+    { "id": "rel-0001", "sourceId": "aldric", "targetId": "mira", "type": "ally", "chapter": null, "revealed": true, "note": null }
   ]
 }
 
@@ -303,6 +411,9 @@ Règles :
 - "chapter" : numéro du chapitre où le lecteur découvre l'événement (entier, 1 ou plus), ou null s'il n'est pas raconté.
 - "revealed" : false si le lecteur ne sait pas encore ce qui s'est passé.
 - "participants" relie un événement à une fiche ("eventId" et "knowledgeId" sont des "id"), avec un "role" court (author, victim, witness, place…) ou null.
+- "relations" : l'état de la relation entre deux fiches ("sourceId" et "targetId" sont les "id" de deux fiches différentes) à partir d'un chapitre. "type" : un parmi {relationTypes}. "chapter" : le chapitre à partir duquel cet état tient (entier, 1 ou plus), ou null s'il tient dès le début du livre. "revealed" : false pour une relation que le lecteur ne connaît pas encore (alliance cachée, parenté secrète). "note" : une nuance en une phrase, ou null.
+- Quand une relation CHANGE, ne modifie pas son état existant : ajoute un nouvel état au chapitre où elle change (alliés dès le début, puis ennemis au chapitre 6). Pour y mettre fin, ajoute un état de type "none". Un couple n'a qu'un seul état par chapitre, dans un sens ou dans l'autre.
+- Les types "mentor", "parent", "member_of", "leader_of" et "serves" ont un sens : "sourceId" est le mentor, le parent, le membre, le chef ou le serviteur de "targetId". Les autres types n'en ont pas ; "other" se précise dans la note.
 - Utilise null quand une information est inconnue. N'invente rien.
 - Ces éléments existent déjà : ne les renvoie pas, sauf pour les corriger avec le même "id". Tu peux t'y référer dans "participants".
 
@@ -310,7 +421,10 @@ Fiches déjà présentes :
 {knowledge}
 
 Événements déjà présents :
-{events}`,
+{events}
+
+Relations déjà présentes :
+{relations}`,
     },
     parse: {
       invalidJson: "Ce texte n'est pas du JSON valide ({reason}). Copiez bien toute la réponse de l'IA.",
@@ -321,7 +435,7 @@ Fiches déjà présentes :
       notItem: 'L’élément {number} de « {section} » doit être un objet.',
       empty: 'Le document ne contient aucun élément.',
     },
-    sections: { knowledge: 'Fiches', events: 'Événements', participants: 'Participants' },
+    sections: { knowledge: 'Fiches', events: 'Événements', participants: 'Participants', relations: 'Relations' },
     status: {
       new: 'Nouveau',
       update: 'Mise à jour',
@@ -362,6 +476,10 @@ Fiches déjà présentes :
       unknownField: 'Champ inconnu : il sera retiré si vous corrigez l’élément.',
       unknownEvent: "Aucun événement avec cet identifiant, ni dans le livre ni dans l'import.",
       unknownKnowledge: "Aucune fiche avec cet identifiant, ni dans le livre ni dans l'import.",
+      sameEntry: 'La relation doit lier deux fiches différentes.',
+      relationType: 'Type de relation inconnu. Types possibles : {types}.',
+      pairDuplicate: 'Ce couple a plusieurs états au même chapitre dans l’import.',
+      pairExists: 'Ces deux fiches ont déjà un état à ce chapitre dans le livre ({existing}).',
       duplicate: 'Cet élément apparaît plusieurs fois dans l’import.',
     },
     server: {
@@ -407,6 +525,10 @@ Fiches déjà présentes :
       id: 'identifiant : {id}',
       participants: 'Participants :',
       tags: 'Étiquettes :',
+      relations: 'Relations :',
+      fromStart: 'dès le début',
+      sinceChapter: 'ch. {number}',
+      secret: 'secrète',
     },
   },
 

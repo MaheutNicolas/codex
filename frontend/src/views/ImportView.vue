@@ -10,10 +10,11 @@ import UiField from '@/components/ui/UiField.vue'
 import * as eventsApi from '@/api/events'
 import * as importer from '@/api/importer'
 import * as knowledgeApi from '@/api/knowledge'
-import { KNOWLEDGE_TYPES } from '@/constants'
+import * as relationsApi from '@/api/relations'
+import { KNOWLEDGE_TYPES, RELATION_TYPES } from '@/constants'
 import { useToast } from '@/composables/useToast'
 import { errorMessage, t } from '@/locales'
-import { itemKey, parseDocument, SECTIONS, validateItem } from '@/utils/importDocument'
+import { itemKey, parseDocument, relationPairKey, SECTIONS, validateItem } from '@/utils/importDocument'
 
 const route = useRoute()
 const toast = useToast()
@@ -24,14 +25,20 @@ const bookId = computed(() => route.params.bookId)
 
 const existingKnowledge = ref(new Map()) // id -> { name, type }
 const existingEvents = ref(new Map()) // id -> { title, worldOrder, chapter }
+const existingRelations = ref(new Map()) // id -> { sourceId, targetId, type, chapter }
 const loading = ref(true)
 
 async function loadExisting() {
   loading.value = true
   try {
-    const [entries, events] = await Promise.all([knowledgeApi.lexicon(bookId.value), eventsApi.listAll(bookId.value)])
+    const [entries, events, relations] = await Promise.all([
+      knowledgeApi.lexicon(bookId.value),
+      eventsApi.listAll(bookId.value),
+      relationsApi.listAll(bookId.value),
+    ])
     existingKnowledge.value = new Map(entries.map((entry) => [entry.id, entry]))
     existingEvents.value = new Map(events.map((event) => [event.id, event]))
+    existingRelations.value = new Map(relations.map((relation) => [relation.id, relation]))
   } catch (error) {
     toast.error(errorMessage(error))
   } finally {
@@ -52,12 +59,20 @@ const instructions = computed(() => {
   const events = [...existingEvents.value.values()]
     .map((event) => `- ${event.id} : ${event.title} (${t('import.instructions.orderOf', { number: event.worldOrder })})`)
     .join('\n')
+  const relations = [...existingRelations.value.values()]
+    .map((relation) => {
+      const when = relation.chapter === null ? t('relations.fromStart') : t('relations.chapter', { number: relation.chapter })
+      return `- ${relation.id} : ${relation.sourceId} -> ${relation.targetId} (${relation.type}, ${when})`
+    })
+    .join('\n')
   const lastOrder = Math.max(0, ...[...existingEvents.value.values()].map((event) => event.worldOrder))
 
   return t('import.instructions.text', {
     types: KNOWLEDGE_TYPES.map(({ value }) => value).join(', '),
     knowledge: knowledge || t('import.instructions.none'),
     events: events || t('import.instructions.none'),
+    relationTypes: RELATION_TYPES.map(({ value }) => value).join(', '),
+    relations: relations || t('import.instructions.none'),
     nextOrder: lastOrder + 1,
   })
 })
@@ -93,6 +108,7 @@ const backOpen = ref(false)
 const existsInBook = (item) => {
   if (item.section === 'knowledge') return existingKnowledge.value.has(item.data.id)
   if (item.section === 'events') return existingEvents.value.has(item.data.id)
+  if (item.section === 'relations') return existingRelations.value.has(item.data.id)
   return false
 }
 
@@ -113,7 +129,19 @@ function contextFor(list) {
     counts.set(key, (counts.get(key) ?? 0) + 1)
   }
 
+  // A pair has one state per chapter: the import must not hold two, nor clash with one that is in the book.
+  for (const item of included) {
+    if (item.section === 'relations' && typeof item.data.sourceId === 'string' && typeof item.data.targetId === 'string') {
+      const key = 'relations-pair:' + relationPairKey(item.data)
+      counts.set(key, (counts.get(key) ?? 0) + 1)
+    }
+  }
+  const relationPairs = new Map(
+    [...existingRelations.value.values()].map((relation) => [relationPairKey(relation), relation.id]),
+  )
+
   return {
+    relationPairs,
     availableKnowledge: idsOf('knowledge', existingKnowledge.value),
     availableEvents: idsOf('events', existingEvents.value),
     duplicates: new Set([...counts].filter(([, count]) => count > 1).map(([key]) => key)),
@@ -154,6 +182,19 @@ function rowOf(item) {
       title: shown(data.title) || shown(data.id) || '?',
       ids: shown(data.id),
       detail: [...place, shown(data.summary)].filter(Boolean).join(' · '),
+    }
+  }
+  if (item.section === 'relations') {
+    const known = RELATION_TYPES.some(({ value }) => value === data.type)
+    const sentence =
+      known && shown(data.sourceId) && shown(data.targetId)
+        ? t(`relations.sentences.${data.type}`, { source: nameOfKnowledge(data.sourceId), target: nameOfKnowledge(data.targetId) })
+        : ''
+    const when = Number.isInteger(data.chapter) ? t('relations.chapter', { number: data.chapter }) : t('relations.fromStart')
+    return {
+      title: sentence || shown(data.id) || '?',
+      ids: shown(data.id),
+      detail: [when, !data.revealed ? t('relations.secret') : '', shown(data.note)].filter(Boolean).join(' · '),
     }
   }
   return {
@@ -392,8 +433,8 @@ watch(
       <p>
         {{
           t('import.done.text', {
-            created: result.created.knowledge + result.created.events + result.created.participants,
-            updated: result.updated.knowledge + result.updated.events + result.updated.participants,
+            created: Object.values(result.created).reduce((sum, count) => sum + count, 0),
+            updated: Object.values(result.updated).reduce((sum, count) => sum + count, 0),
           })
         }}
       </p>

@@ -20,6 +20,7 @@ export default {
     books: 'My books',
     library: 'Library',
     timeline: 'Timeline',
+    relations: 'Relations',
     keys: 'API key',
     import: 'Import',
     export: 'Export',
@@ -119,6 +120,8 @@ export default {
       aliasesHint: 'Other names or nicknames. Enter or comma to add.',
       aliasesPlaceholder: 'Add an alias…',
       removeAlias: 'Remove the alias {alias}',
+      viewRelations: 'See its relations',
+      viewRelationsSave: 'Save your changes first.',
       saveAndNext: 'Save and create another',
       errors: {
         nameRequired: 'The name is required.',
@@ -223,6 +226,108 @@ export default {
     keepEditing: 'Keep editing',
   },
 
+  relations: {
+    title: 'Relations',
+    subtitle: 'How the links between entries evolve: each line is a state of the relation from a chapter on.',
+    new: 'New relation',
+    character: 'Entry',
+    allCharacters: 'All entries',
+    with: 'With',
+    anyone: 'Any',
+    typeLabel: 'Type',
+    allTypes: 'All types',
+    visibility: { all: 'All', revealed: 'Known', secret: 'Secret' },
+    count: { one: '{count} state', other: '{count} states' },
+    fromStart: 'From the start',
+    chapter: 'Chapter {number}',
+    secret: 'Secret',
+    latest: 'Latest state',
+    searchHint: 'Pick an entry to follow how its relations evolve, then a second one to see those of a pair.',
+    empty: {
+      title: 'No relations yet',
+      text: 'Add the first one: allies from the start, enemies from chapter 6… A relation that changes is not edited: add a new state at the chapter where it changes.',
+    },
+    noResults: {
+      title: 'No results',
+      text: 'No relation matches these criteria.',
+      reset: 'Clear the filters',
+    },
+    types: {
+      ally: 'Allies',
+      enemy: 'Enemies',
+      rival: 'Rivals',
+      friend: 'Friends',
+      family: 'Family',
+      partner: 'Partners',
+      mentor: 'Mentor',
+      parent: 'Parent',
+      member_of: 'Member of',
+      leader_of: 'Leader of',
+      serves: 'Serves',
+      other: 'Other link',
+      none: 'No longer linked',
+    },
+    sentences: {
+      ally: '{source} and {target} are allies.',
+      enemy: '{source} and {target} are enemies.',
+      rival: '{source} and {target} are rivals.',
+      friend: '{source} and {target} are friends.',
+      family: '{source} and {target} are family.',
+      partner: '{source} and {target} are partners.',
+      mentor: '{source} is the mentor of {target}.',
+      parent: '{source} is a parent of {target}.',
+      member_of: '{source} is a member of {target}.',
+      leader_of: '{source} leads {target}.',
+      serves: '{source} serves {target}.',
+      other: '{source} and {target} are linked.',
+      none: '{source} and {target} are no longer linked.',
+    },
+    form: {
+      createTitle: 'New relation',
+      editTitle: 'Edit the relation',
+      source: 'First entry',
+      target: 'Second entry',
+      pick: 'Choose an entry…',
+      type: 'Relation',
+      typeHint: 'For "mentor", "parent", "member of", "leader of" and "serves", the first entry is the one that is the mentor, parent, member… of the second.',
+      swap: 'Swap the two entries',
+      preview: 'Preview',
+      chapter: 'From chapter',
+      chapterHint: 'Empty: from the start of the book. The state holds until the next state of this pair.',
+      revealed: 'The reader already knows',
+      revealedHint: 'Untick for a secret relation (hidden alliance, undisclosed kinship…).',
+      note: 'Note',
+      noteHint: 'Optional: a nuance in one sentence.',
+      id: 'Identifier',
+      idHint: 'This is the address of the relation, used by the AI. It cannot be changed afterwards.',
+      idLocked: 'The identifier of an existing relation cannot be changed.',
+      history: 'Other states of this pair',
+      historyNone: 'No other state for this pair.',
+      saveAndNext: 'Save and add another',
+      errors: {
+        sourceRequired: 'Choose the first entry.',
+        targetRequired: 'Choose the second entry.',
+        sameEntry: 'Choose two different entries.',
+        typeRequired: 'Choose a type of relation.',
+        chapterInvalid: 'Enter a chapter number (1 or more), or leave empty.',
+        noteTooLong: 'The note cannot exceed 500 characters.',
+        idRequired: 'The identifier is required.',
+        idFormat: 'Lowercase letters, digits and hyphens only (e.g. rel-0042).',
+        idExists: 'This identifier is already used in this book.',
+        pairExists: 'These two entries already have a state at this chapter ({existing}): edit it or choose another chapter.',
+      },
+    },
+    created: 'Relation created.',
+    saved: 'Relation saved.',
+    deleted: 'Relation deleted.',
+    deleteTitle: 'Delete this relation?',
+    deleteText: 'This state of the relation will be permanently deleted: {sentence} The previous state of the pair, if any, will hold again.',
+    discardTitle: 'Discard the changes?',
+    discardText: 'Unsaved changes will be lost.',
+    discard: 'Discard',
+    keepEditing: 'Keep editing',
+  },
+
   keys: {
     title: 'API key',
     subtitle: 'The key that lets an AI or a script read this book.',
@@ -261,7 +366,7 @@ export default {
       title: '2. Paste its answer',
       text: 'Paste the JSON document returned by the AI here. Nothing is saved before the review step.',
       label: 'Answer of the AI',
-      placeholder: '{ "knowledge": [], "events": [], "participants": [] }',
+      placeholder: '{ "knowledge": [], "events": [], "participants": [], "relations": [] }',
       analyse: 'Check',
     },
     instructions: {
@@ -279,6 +384,9 @@ export default {
   ],
   "participants": [
     { "eventId": "evt-0043", "knowledgeId": "aldric", "role": "author" }
+  ],
+  "relations": [
+    { "id": "rel-0001", "sourceId": "aldric", "targetId": "mira", "type": "ally", "chapter": null, "revealed": true, "note": null }
   ]
 }
 
@@ -302,6 +410,9 @@ Rules:
 - "chapter": number of the chapter where the reader discovers the event (a whole number, 1 or more), or null if it is not told.
 - "revealed": false if the reader does not know yet what happened.
 - "participants" links an event to an entry ("eventId" and "knowledgeId" are "id" values), with a short "role" (author, victim, witness, place…) or null.
+- "relations": the state of the relation between two entries ("sourceId" and "targetId" are the "id" of two different entries) from a chapter on. "type": one of {relationTypes}. "chapter": the chapter from which this state holds (a whole number, 1 or more), or null if it holds from the start of the book. "revealed": false for a relation the reader does not know yet (hidden alliance, secret kinship). "note": a nuance in one sentence, or null.
+- When a relation CHANGES, do not edit its existing state: add a new state at the chapter where it changes (allies from the start, then enemies from chapter 6). To end it, add a state of type "none". A pair has only one state per chapter, in either direction.
+- The types "mentor", "parent", "member_of", "leader_of" and "serves" have a direction: "sourceId" is the mentor, parent, member, leader or servant of "targetId". The other types have none; "other" is explained in the note.
 - Use null when a piece of information is unknown. Do not invent anything.
 - These items already exist: do not send them again, except to correct them with the same "id". You can refer to them in "participants".
 
@@ -309,7 +420,10 @@ Entries already present:
 {knowledge}
 
 Events already present:
-{events}`,
+{events}
+
+Relations already present:
+{relations}`,
     },
     parse: {
       invalidJson: 'This text is not valid JSON ({reason}). Make sure you copied the whole answer of the AI.',
@@ -320,7 +434,7 @@ Events already present:
       notItem: 'Item {number} of "{section}" must be an object.',
       empty: 'The document contains no items.',
     },
-    sections: { knowledge: 'Entries', events: 'Events', participants: 'Participants' },
+    sections: { knowledge: 'Entries', events: 'Events', participants: 'Participants', relations: 'Relations' },
     status: {
       new: 'New',
       update: 'Update',
@@ -361,6 +475,10 @@ Events already present:
       unknownField: 'Unknown field: it will be removed if you fix the item.',
       unknownEvent: 'No event with this identifier, neither in the book nor in the import.',
       unknownKnowledge: 'No entry with this identifier, neither in the book nor in the import.',
+      sameEntry: 'The relation must link two different entries.',
+      relationType: 'Unknown type of relation. Possible types: {types}.',
+      pairDuplicate: 'This pair has several states at the same chapter in the import.',
+      pairExists: 'These two entries already have a state at this chapter in the book ({existing}).',
       duplicate: 'This item appears several times in the import.',
     },
     server: {
@@ -406,6 +524,10 @@ Events already present:
       id: 'identifier: {id}',
       participants: 'Participants:',
       tags: 'Tags:',
+      relations: 'Relations:',
+      fromStart: 'from the start',
+      sinceChapter: 'ch. {number}',
+      secret: 'secret',
     },
   },
 

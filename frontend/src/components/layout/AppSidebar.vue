@@ -1,6 +1,6 @@
 <script setup>
 import { useRouter } from 'vue-router'
-import { BookMarked, BookOpen, Clock, Download, KeyRound, Library, LogOut, Upload } from '@lucide/vue'
+import { BookMarked, BookOpen, Clock, Download, KeyRound, Library, LogOut, Network, Upload } from '@lucide/vue'
 import ThemeMenu from '@/components/layout/ThemeMenu.vue'
 import { useAuth } from '@/composables/useAuth'
 import { useBookLoader } from '@/composables/useBook'
@@ -16,6 +16,7 @@ const { book } = useBookLoader()
 const bookLinks = [
   { name: 'library', label: 'nav.library', icon: Library },
   { name: 'timeline', label: 'nav.timeline', icon: Clock },
+  { name: 'relations', label: 'nav.relations', icon: Network },
   { name: 'import', label: 'nav.import', icon: Upload },
   { name: 'export', label: 'nav.export', icon: Download },
   { name: 'keys', label: 'nav.keys', icon: KeyRound },

@@ -1,6 +1,7 @@
 <script setup>
 import { computed, nextTick, reactive, ref, watch } from 'vue'
-import { Trash2 } from '@lucide/vue'
+import { useRouter } from 'vue-router'
+import { Network, Trash2 } from '@lucide/vue'
 import UiButton from '@/components/ui/UiButton.vue'
 import UiDialog from '@/components/ui/UiDialog.vue'
 import UiField from '@/components/ui/UiField.vue'
@@ -24,6 +25,7 @@ const props = defineProps({
 const emit = defineEmits(['close', 'saved', 'deleted'])
 
 const toast = useToast()
+const router = useRouter()
 
 const isCreate = computed(() => props.entryId === null)
 const typeOptions = computed(() => KNOWLEDGE_TYPES.map(({ value }) => ({ value, label: t(`library.types.${value}`) })))
@@ -186,6 +188,11 @@ async function remove() {
   }
 }
 
+// The relations page, filtered on this entry. Unsaved changes would be lost on the way, so save first.
+function viewRelations() {
+  router.push({ name: 'relations', params: { bookId: props.bookId }, query: { character: props.entryId } })
+}
+
 // Escape, the backdrop and the cross end up here: unsaved changes are never lost without asking.
 function requestClose() {
   if (dirty.value && !state.saving) state.discardOpen = true
@@ -260,6 +267,16 @@ function discard() {
     </form>
 
     <template #footer>
+      <UiButton
+        v-if="!isCreate"
+        variant="ghost"
+        :disabled="dirty"
+        :title="dirty ? t('library.form.viewRelationsSave') : undefined"
+        @click="viewRelations"
+      >
+        <Network aria-hidden="true" />
+        {{ t('library.form.viewRelations') }}
+      </UiButton>
       <UiButton v-if="!isCreate" variant="ghost" class="c-dialog__spacer" @click="state.removalOpen = true">
         <Trash2 aria-hidden="true" />
         {{ t('common.delete') }}
