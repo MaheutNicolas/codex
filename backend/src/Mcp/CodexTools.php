@@ -9,6 +9,7 @@ use App\Entity\Knowledge;
 use App\Error\ApiException;
 use App\Service\KnowledgeService;
 use App\Service\RelatedService;
+use App\Service\RelationshipService;
 use App\Service\RelationStateService;
 use App\Service\SearchService;
 use App\Service\TimelineService;
@@ -33,6 +34,7 @@ final class CodexTools
         private readonly SearchService $search,
         private readonly RelatedService $related,
         private readonly RelationStateService $relationStates,
+        private readonly RelationshipService $relationship,
     ) {
     }
 
@@ -118,6 +120,38 @@ final class CodexTools
             $this->viewpoint($atChapter, $beforeChapter, $includeSecrets),
             $withHistory,
             new Page($limit, $offset),
+        ));
+    }
+
+    /**
+     * Looks up how TWO entries stand with each other: use it before writing a scene with two characters. It gives
+     * the "status" of the pair ("linked", "ended" when they used to be linked, or "none"), the current "relation"
+     * (type, a sentence naming both, the chapter it has held since, a note), the "history" of the pair (every state
+     * in order, e.g. allies from the start, enemies from chapter 6, no longer linked from chapter 9), and the events
+     * they both take part in ("sharedEvents", with the role of each). The order of the two ids does not change the
+     * answer, only the "direction" of a relation that reads one way (e.g. mentor). Use the ids from index or search.
+     *
+     * @param string   $id             The id of the first entry, e.g. "aldric".
+     * @param string   $otherId        The id of the second entry, e.g. "mira".
+     * @param int|null $atChapter      The reader has read chapters 1 to this one (inclusive): later changes and events are hidden.
+     * @param int|null $beforeChapter  The reader has read chapters 1 to this one minus one (use it when writing this chapter).
+     * @param bool     $includeSecrets Also show relations and events the reader does not know yet. Use it only for the author's own knowledge.
+     * @param int      $eventsLimit    How many shared events to list (1 to 50).
+     *
+     * @return array<string, mixed>
+     */
+    public function get_relationship(string $id, string $otherId, ?int $atChapter = null, ?int $beforeChapter = null, bool $includeSecrets = false, int $eventsLimit = 10): array
+    {
+        if ($eventsLimit < 1 || $eventsLimit > 50) {
+            throw new ToolCallException('The limit must be between 1 and 50.');
+        }
+
+        return $this->call(fn () => $this->relationship->between(
+            $this->book,
+            $id,
+            $otherId,
+            $this->viewpoint($atChapter, $beforeChapter, $includeSecrets),
+            $eventsLimit,
         ));
     }
 

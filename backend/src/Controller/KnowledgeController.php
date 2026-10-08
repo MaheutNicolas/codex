@@ -8,6 +8,7 @@ use App\Entity\Book;
 use App\Entity\Knowledge;
 use App\Service\KnowledgeService;
 use App\Service\RelatedService;
+use App\Service\RelationshipService;
 use App\Service\RelationStateService;
 use App\Validation\Validate;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -22,6 +23,7 @@ final class KnowledgeController
         private readonly KnowledgeService $service,
         private readonly RelatedService $related,
         private readonly RelationStateService $relationStates,
+        private readonly RelationshipService $relationship,
         private readonly ApiHelper $api,
         private readonly Validate $validate,
     ) {
@@ -76,6 +78,22 @@ final class KnowledgeController
             $this->validate->viewpoint($request),
             $this->validate->boolQuery($request, 'withHistory') ?? false,
             new Page($this->validate->intQuery($request, 'limit', 1, 200) ?? 30, $this->validate->intQuery($request, 'offset', 0) ?? 0),
+        ));
+    }
+
+    /**
+     * How two entries stand with each other from a point of view: the relation that holds, its history, and the
+     * events they share (the first "eventsLimit", 10 by default).
+     */
+    #[Route('/{id}/relations/{otherId}', methods: ['GET'])]
+    public function relationship(Book $book, string $id, string $otherId, Request $request): JsonResponse
+    {
+        return ApiHelper::json($this->relationship->between(
+            $book,
+            $id,
+            $otherId,
+            $this->validate->viewpoint($request),
+            $this->validate->intQuery($request, 'eventsLimit', 1, 50) ?? 10,
         ));
     }
 

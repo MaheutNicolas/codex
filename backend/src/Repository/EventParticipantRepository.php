@@ -84,6 +84,44 @@ class EventParticipantRepository extends ServiceEntityRepository
     }
 
     /**
+     * The events two entries both take part in, in the order of the world, with the role each one has. Only the
+     * events the reader may see. Two queries: the first $limit events, and how many there are.
+     *
+     * @return array{rows: list<array<string, mixed>>, total: int}
+     */
+    public function sharedEvents(Book $book, string $firstSlug, string $secondSlug, Viewpoint $viewpoint, int $limit): array
+    {
+        [$visible, $visibleParams] = ViewpointSql::events($viewpoint, 'e');
+        $from = 'FROM event_participant p1 '
+            .'JOIN knowledge k1 ON k1.id = p1.knowledge_id AND k1.book_id = :book AND k1.slug = :first '
+            .'JOIN event_participant p2 ON p2.event_id = p1.event_id '
+            .'JOIN knowledge k2 ON k2.id = p2.knowledge_id AND k2.book_id = :book AND k2.slug = :second '
+            .'JOIN event e ON e.id = p1.event_id AND '.$visible;
+        $params = ['book' => $book->getId(), 'first' => $firstSlug, 'second' => $secondSlug] + $visibleParams;
+        $connection = $this->getEntityManager()->getConnection();
+
+        $rows = $connection->fetchAllAssociative(
+            'SELECT e.slug AS id, e.title, e.chapter, e.world_order AS worldOrder, e.world_date AS worldDate, '
+            .'p1.role AS firstRole, p2.role AS secondRole '
+            .$from.' ORDER BY e.world_order, e.slug LIMIT '.$limit,
+            $params,
+        );
+
+        return [
+            'rows' => array_map(static fn (array $row) => [
+                'id' => $row['id'],
+                'title' => $row['title'],
+                'chapter' => null === $row['chapter'] ? null : (int) $row['chapter'],
+                'worldOrder' => (int) $row['worldOrder'],
+                'worldDate' => $row['worldDate'],
+                'firstRole' => $row['firstRole'],
+                'secondRole' => $row['secondRole'],
+            ], $rows),
+            'total' => (int) $connection->fetchOne('SELECT COUNT(*) '.$from, $params),
+        ];
+    }
+
+    /**
      * The participants of several events of a book (identifier, name, role), in one query.
      *
      * @param list<string> $eventSlugs

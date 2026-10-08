@@ -198,6 +198,47 @@ abstract class ApiTestCase extends WebTestCase
     }
 
     /**
+     * The story of Aldric, for the tests about relations. Allies with Mira from the start, enemies from chapter 6, no
+     * longer linked from chapter 9; mentored by Corvin from chapter 2; friends with Zed from chapter 1 but secretly his
+     * enemy from chapter 4; in the service of the citadel from the start. He shares an event with Mira (chapter 1),
+     * with Loner (chapter 3) and with Corvin (chapter 5); Loner has no relation with him.
+     *
+     * @return array<string, list<array<string, mixed>>>
+     */
+    protected function aldricStory(): array
+    {
+        return [
+            'knowledge' => [
+                ['id' => 'aldric', 'type' => 'character', 'name' => 'Aldric', 'summary' => 's'],
+                ['id' => 'mira', 'type' => 'character', 'name' => 'Mira', 'summary' => 's'],
+                ['id' => 'corvin', 'type' => 'character', 'name' => 'Corvin', 'summary' => 's'],
+                ['id' => 'zed', 'type' => 'character', 'name' => 'Zed', 'summary' => 's'],
+                ['id' => 'loner', 'type' => 'character', 'name' => 'Loner', 'summary' => 's'],
+                ['id' => 'citadel', 'type' => 'place', 'name' => 'North Citadel', 'summary' => 's'],
+            ],
+            'events' => [
+                ['id' => 'e1', 'title' => 'One', 'summary' => 's', 'worldOrder' => 1, 'chapter' => 1],
+                ['id' => 'e2', 'title' => 'Two', 'summary' => 's', 'worldOrder' => 2, 'chapter' => 3],
+                ['id' => 'e3', 'title' => 'Three', 'summary' => 's', 'worldOrder' => 3, 'chapter' => 5],
+            ],
+            'participants' => [
+                ['eventId' => 'e1', 'knowledgeId' => 'aldric'], ['eventId' => 'e1', 'knowledgeId' => 'mira'],
+                ['eventId' => 'e2', 'knowledgeId' => 'aldric'], ['eventId' => 'e2', 'knowledgeId' => 'loner'],
+                ['eventId' => 'e3', 'knowledgeId' => 'aldric'], ['eventId' => 'e3', 'knowledgeId' => 'corvin'],
+            ],
+            'relations' => [
+                ['id' => 'rel-a', 'sourceId' => 'aldric', 'targetId' => 'mira', 'type' => 'ally', 'chapter' => null],
+                ['id' => 'rel-b', 'sourceId' => 'aldric', 'targetId' => 'mira', 'type' => 'enemy', 'chapter' => 6, 'note' => 'The betrayal.'],
+                ['id' => 'rel-c', 'sourceId' => 'mira', 'targetId' => 'aldric', 'type' => 'none', 'chapter' => 9],
+                ['id' => 'rel-d', 'sourceId' => 'corvin', 'targetId' => 'aldric', 'type' => 'mentor', 'chapter' => 2],
+                ['id' => 'rel-e', 'sourceId' => 'aldric', 'targetId' => 'citadel', 'type' => 'serves', 'chapter' => null],
+                ['id' => 'rel-f', 'sourceId' => 'aldric', 'targetId' => 'zed', 'type' => 'friend', 'chapter' => 1],
+                ['id' => 'rel-g', 'sourceId' => 'aldric', 'targetId' => 'zed', 'type' => 'enemy', 'chapter' => 4, 'revealed' => false],
+            ],
+        ];
+    }
+
+    /**
      * The ids of the items of a list response, in order.
      *
      * @return list<string>

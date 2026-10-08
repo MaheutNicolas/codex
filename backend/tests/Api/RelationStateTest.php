@@ -25,35 +25,7 @@ final class RelationStateTest extends ApiTestCase
         parent::setUp();
         $this->loginAsNewUser();
         $this->bookId = $this->createBook();
-        $this->import($this->bookId, [
-            'knowledge' => [
-                ['id' => 'aldric', 'type' => 'character', 'name' => 'Aldric', 'summary' => 's'],
-                ['id' => 'mira', 'type' => 'character', 'name' => 'Mira', 'summary' => 's'],
-                ['id' => 'corvin', 'type' => 'character', 'name' => 'Corvin', 'summary' => 's'],
-                ['id' => 'zed', 'type' => 'character', 'name' => 'Zed', 'summary' => 's'],
-                ['id' => 'loner', 'type' => 'character', 'name' => 'Loner', 'summary' => 's'],
-                ['id' => 'citadel', 'type' => 'place', 'name' => 'North Citadel', 'summary' => 's'],
-            ],
-            'events' => [
-                ['id' => 'e1', 'title' => 'One', 'summary' => 's', 'worldOrder' => 1, 'chapter' => 1],
-                ['id' => 'e2', 'title' => 'Two', 'summary' => 's', 'worldOrder' => 2, 'chapter' => 3],
-                ['id' => 'e3', 'title' => 'Three', 'summary' => 's', 'worldOrder' => 3, 'chapter' => 5],
-            ],
-            'participants' => [
-                ['eventId' => 'e1', 'knowledgeId' => 'aldric'], ['eventId' => 'e1', 'knowledgeId' => 'mira'],
-                ['eventId' => 'e2', 'knowledgeId' => 'aldric'], ['eventId' => 'e2', 'knowledgeId' => 'loner'],
-                ['eventId' => 'e3', 'knowledgeId' => 'aldric'], ['eventId' => 'e3', 'knowledgeId' => 'corvin'],
-            ],
-            'relations' => [
-                ['id' => 'rel-a', 'sourceId' => 'aldric', 'targetId' => 'mira', 'type' => 'ally', 'chapter' => null],
-                ['id' => 'rel-b', 'sourceId' => 'aldric', 'targetId' => 'mira', 'type' => 'enemy', 'chapter' => 6, 'note' => 'The betrayal.'],
-                ['id' => 'rel-c', 'sourceId' => 'mira', 'targetId' => 'aldric', 'type' => 'none', 'chapter' => 9],
-                ['id' => 'rel-d', 'sourceId' => 'corvin', 'targetId' => 'aldric', 'type' => 'mentor', 'chapter' => 2],
-                ['id' => 'rel-e', 'sourceId' => 'aldric', 'targetId' => 'citadel', 'type' => 'serves', 'chapter' => null],
-                ['id' => 'rel-f', 'sourceId' => 'aldric', 'targetId' => 'zed', 'type' => 'friend', 'chapter' => 1],
-                ['id' => 'rel-g', 'sourceId' => 'aldric', 'targetId' => 'zed', 'type' => 'enemy', 'chapter' => 4, 'revealed' => false],
-            ],
-        ]);
+        $this->import($this->bookId, $this->aldricStory());
         $this->token = $this->keyOf($this->bookId);
     }
 

@@ -10,6 +10,7 @@ use App\Repository\ApiKeyRepository;
 use App\Service\ApiKeyService;
 use App\Service\KnowledgeService;
 use App\Service\RelatedService;
+use App\Service\RelationshipService;
 use App\Service\RelationStateService;
 use App\Service\SearchService;
 use App\Service\TimelineService;
@@ -39,6 +40,7 @@ final class McpController
         private readonly SearchService $search,
         private readonly RelatedService $related,
         private readonly RelationStateService $relationStates,
+        private readonly RelationshipService $relationship,
         #[Autowire('%kernel.project_dir%/var/mcp-sessions')]
         private readonly string $sessionDirectory,
         #[Autowire('%env(MCP_ALLOWED_HOSTS)%')]
@@ -55,20 +57,21 @@ final class McpController
         }
         $this->keyService->markUsed($key);
 
-        $tools = new CodexTools($key->getBook(), $this->knowledge, $this->timeline, $this->search, $this->related, $this->relationStates);
+        $tools = new CodexTools($key->getBook(), $this->knowledge, $this->timeline, $this->search, $this->related, $this->relationStates, $this->relationship);
 
         $server = Server::builder()
             ->setServerInfo('Codex', '1.0.0')
             ->setInstructions(
                 'Codex is the library of a book being written: its entries (characters, groups, species, places, items, systems, abilities, concepts, ranks, themes), and the '
                 .'events of its timeline. Read it to stay consistent with the story. Start with search or index to find '
-                .'the id of an entry, then read it with get_knowledge; get_relations gives its relations (allies, enemies, mentors... as they stand at the chapter reached, with their history on request); get_related shows who and what it is most linked to. index also tells how far the story has been written '
+                .'the id of an entry, then read it with get_knowledge; get_relations gives its relations (allies, enemies, mentors... as they stand at the chapter reached, with their history on request); get_relationship looks up how two entries stand with each other before you write a scene with both; get_related shows who and what it is most linked to. index also tells how far the story has been written '
                 .'(lastChapter): to continue it, pass atChapter = lastChapter; to rewrite a given chapter, pass '
                 .'beforeChapter so that you only see what the reader already knows.',
             )
             ->setSession(new FileSessionStore($this->sessionDirectory))
             ->addTool([$tools, 'index'], name: 'index', title: 'List the entries')
             ->addTool([$tools, 'get_knowledge'], name: 'get_knowledge', title: 'Read an entry')
+            ->addTool([$tools, 'get_relationship'], name: 'get_relationship', title: 'Look up the relationship of two entries')
             ->addTool([$tools, 'get_relations'], name: 'get_relations', title: 'Read the relations of an entry')
             ->addTool([$tools, 'get_related'], name: 'get_related', title: 'Find related entries')
             ->addTool([$tools, 'timeline'], name: 'timeline', title: 'Read the timeline')
