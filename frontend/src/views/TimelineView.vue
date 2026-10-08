@@ -250,7 +250,12 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKeydown))
     <template v-else>
       <p class="library__count">{{ tn('timeline.count', visible.length) }}</p>
       <ol class="timeline__list">
-        <li v-for="event in visible" :key="event.id" class="timeline__item">
+        <li
+          v-for="(event, index) in visible"
+          :key="event.id"
+          class="timeline__item"
+          :class="{ 'timeline__item--new-chapter': index > 0 && visible[index - 1].chapter !== event.chapter }"
+        >
           <button
             type="button"
             class="timeline__row"

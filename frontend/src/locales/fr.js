@@ -217,6 +217,13 @@ export default {
     regenerate: 'Régénérer la clé',
     regenerateHint: "À faire si vous pensez que la clé a fuité : l'ancienne est supprimée.",
     regenerated: 'Nouvelle clé générée.',
+    mcp: {
+      title: 'Adresse du serveur MCP',
+      text: "C'est l'adresse à donner à votre IA (ChatGPT, Claude…) pour qu'elle consulte ce livre pendant l'écriture. Elle contient la clé : ne la partagez pas.",
+      label: 'Adresse du serveur MCP',
+      copied: 'Adresse copiée.',
+      hint: "L'IA doit pouvoir joindre le serveur : une adresse locale (localhost) ne fonctionnera qu'une fois l'application en ligne en HTTPS. Régénérer la clé change cette adresse.",
+    },
     confirmTitle: 'Régénérer la clé ?',
     confirmText:
       "La clé actuelle cessera de fonctionner immédiatement : tout outil qui l'utilise (une IA, un script) perdra l'accès tant que vous ne lui aurez pas donné la nouvelle clé.",

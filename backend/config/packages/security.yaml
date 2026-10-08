@@ -51,6 +51,7 @@ security:
         - { path: ^/health$, roles: PUBLIC_ACCESS }
         - { path: ^/api/errors$, roles: PUBLIC_ACCESS }
         - { path: ^/api/auth/login$, roles: PUBLIC_ACCESS }
+        - { path: ^/mcp/, roles: PUBLIC_ACCESS } # the key in the address authenticates the AI (see McpController)
         - { path: ^/, roles: ROLE_USER }
 
 when@test:

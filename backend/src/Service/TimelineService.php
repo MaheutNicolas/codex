@@ -5,6 +5,8 @@ namespace App\Service;
 use App\Api\Page;
 use App\Api\Viewpoint;
 use App\Entity\Book;
+use App\Error\ApiException;
+use App\Error\ErrorCode;
 use App\Repository\EventParticipantRepository;
 use App\Repository\EventRepository;
 
@@ -18,6 +20,7 @@ final class TimelineService
         private readonly EventRepository $events,
         private readonly EventParticipantRepository $participants,
         private readonly Paginator $paginator,
+        private readonly EventService $eventService,
     ) {
     }
 
@@ -37,5 +40,25 @@ final class TimelineService
         }
 
         return $result;
+    }
+    /**
+     * One event with its detail and participants, if it is visible from this point of view
+     * (otherwise it is reported as not found, like an event that does not exist).
+     *
+     * @return array<string, mixed>
+     */
+    public function event(Book $book, string $slug, Viewpoint $viewpoint): array
+    {
+        $event = $this->eventService->get($book, $slug);
+        if (!$viewpoint->allows($event['revealed'], $event['chapter'])) {
+            throw new ApiException(ErrorCode::EVENT_NOT_FOUND, ['id' => $slug]);
+        }
+
+        $event['participants'] = array_map(
+            static fn (array $row) => ['id' => $row['id'], 'name' => $row['name'], 'role' => $row['role']],
+            $this->participants->participantsOf($book, [$slug]),
+        );
+
+        return $event;
     }
 }

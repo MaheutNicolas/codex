@@ -349,13 +349,18 @@ Sans `includeSecrets`, seuls les événements `revealed = true` sont visibles. A
 
 **Recherche** : index `FULLTEXT` MySQL (fiches : nom, résumé, description ; événements : titre, résumé, détail) en mode booléen, avec un début de mot accepté (`cita` trouve `citadelle`), plus une comparaison simple sur le nom, l'identifiant, les alias et les étiquettes, mot par mot, pour trouver un surnom ou un mot court. Les mots de moins de 3 lettres ne comptent que s'ils sont seuls. Un résultat dont le nom, l'identifiant, un alias ou une étiquette contient des mots de la recherche passe avant un résultat trouvé seulement dans les textes. Le texte est découpé en mots (lettres et chiffres) : les opérateurs de recherche ne sont pas interprétés. Réponse : `{ data: [{ kind: "knowledge" | "event", id, name, summary, score, … }], total }`.
 
-### Étape 5 : serveur MCP distant
+### Étape 5 : serveur MCP distant (en cours)
 
-- Une route de l'application Symfony (`/mcp`) avec le SDK PHP officiel (`mcp/sdk`, transport HTTP Streamable) ; les outils appellent directement les repositories. Le SDK est à revérifier avant de s'engager.
-- **Authentification** : d'abord une clé secrète révocable dans l'URL (`https://<hôte>/mcp/<clé>`, la clé désigne l'utilisateur, le livre et le droit lecture ou écriture). ChatGPT n'impose pas OAuth (il accepte aussi le mode sans authentification), donc la clé dans l'URL lui suffit. Claude.ai utilise OAuth 2.1 : OAuth ne sera ajouté que si Claude le refuse (à tester).
-- **Outils en lecture** : `index`, `get_knowledge`, `get_knowledge_events`, `timeline`, `get_event`, `search`.
-- **Outils en écriture** (clé `write`, pour Claude) : `create_knowledge`, `update_knowledge`, `create_event`, `update_event`, `link_participant`, avec les mêmes validations que l'API. Pas d'outil de suppression : elle reste réservée à l'app. Les clients MCP demandent une confirmation avant chaque écriture.
-- ChatGPT Pro reste en lecture seule ; ses ajouts passent par l'import en masse de l'étape 3.
+**Fait** : une route `/mcp/{clé}` de l'application Symfony, avec le SDK PHP officiel (`mcp/sdk` 0.8, encore en 0.x donc à surveiller) et le transport HTTP « Streamable ». Elle accepte les deux ères du protocole (poignée de main `initialize` avec sessions, et la révision sans état de 2026).
+
+- **Authentification** : la clé du livre fait partie de l'adresse (`https://<hôte>/mcp/cdx_…`). Elle désigne le livre (les outils n'ont donc jamais d'identifiant de livre) et donne l'accès en lecture. Une clé inconnue donne `UNAUTHORIZED` (401). La route est publique pour Symfony (`access_control`) : c'est le contrôleur qui vérifie la clé. La page « Clé d'API » affiche l'adresse MCP à copier. Attention : la clé apparaît dans l'adresse, donc dans les journaux du serveur web ; la régénérer invalide l'ancienne adresse.
+- **Outils (lecture seule)** dans `src/Mcp/CodexTools.php`, qui appellent les mêmes services que les routes de l'étape 4 : `index`, `get_knowledge` (fiche et ses événements), `timeline`, `get_event`, `search`. Chacun accepte `atChapter`, `beforeChapter` et `includeSecrets` (voir l'étape 4). Leurs descriptions, en anglais, sont écrites pour l'IA qui les lit. Une erreur est renvoyée à l'IA comme une erreur d'outil lisible (« The event was not found… »). `get_event` applique aussi le point de vue : un événement secret ou raconté plus tard est « introuvable ».
+- **Sessions** : stockées en fichiers dans `var/mcp-sessions` (le serveur web doit pouvoir y écrire). Les adresses autorisées dans l'en-tête `Host` (protection contre le DNS rebinding) se règlent avec `MCP_ALLOWED_HOSTS` (liste séparée par des virgules, `localhost,127.0.0.1,[::1]` par défaut) : **en production, y ajouter le nom de domaine public** dans `backend/.env.local`.
+- Pas d'outil d'écriture : les ajouts passent par l'import de l'étape 3.
+
+**Reste** : mettre l'application en ligne en HTTPS (ChatGPT n'accepte que des serveurs publics en HTTPS ; un tunnel peut servir de test) et essayer le connecteur dans ChatGPT et Claude. OAuth n'est à ajouter que si Claude refuse la clé dans l'adresse.
+
+**Tester en local** sans IA : `npx @modelcontextprotocol/inspector`, transport « Streamable HTTP », adresse `http://127.0.0.1:8000/mcp/<clé>`.
 
 ### Plus tard
 

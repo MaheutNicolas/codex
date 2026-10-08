@@ -216,6 +216,13 @@ export default {
     regenerate: 'Regenerate the key',
     regenerateHint: 'Do this if you think the key has leaked: the old one is deleted.',
     regenerated: 'New key generated.',
+    mcp: {
+      title: 'MCP server address',
+      text: 'This is the address to give your AI (ChatGPT, Claude…) so that it can consult this book while writing. It contains the key: do not share it.',
+      label: 'MCP server address',
+      copied: 'Address copied.',
+      hint: 'The AI must be able to reach the server: a local address (localhost) will only work once the app is online over HTTPS. Regenerating the key changes this address.',
+    },
     confirmTitle: 'Regenerate the key?',
     confirmText:
       'The current key will stop working immediately: any tool using it (an AI, a script) will lose access until you give it the new key.',

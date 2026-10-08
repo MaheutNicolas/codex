@@ -7,7 +7,6 @@ use App\Error\ErrorCode;
 use App\Error\ErrorResponse;
 use App\Repository\ApiKeyRepository;
 use App\Service\ApiKeyService;
-use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Security\Core\Authentication\Token\TokenInterface;
@@ -21,12 +20,9 @@ use Symfony\Component\Security\Http\Authenticator\Passport\SelfValidatingPasspor
 /** Authenticates a request by its X-API-Key header. The authenticated user is the owner of the key. */
 final class ApiKeyAuthenticator extends AbstractAuthenticator
 {
-    /** Writing the last use date on every request would be wasteful: it is refreshed at most this often. */
-    private const TOUCH_INTERVAL = 'PT5M';
-
     public function __construct(
         private readonly ApiKeyRepository $keys,
-        private readonly EntityManagerInterface $em,
+        private readonly ApiKeyService $keyService,
     ) {
     }
 
@@ -43,7 +39,7 @@ final class ApiKeyAuthenticator extends AbstractAuthenticator
             throw new BadCredentialsException('Unknown API key.');
         }
 
-        $this->touch($key);
+        $this->keyService->markUsed($key);
 
         $user = $key->getUser();
         $passport = new SelfValidatingPassport(new UserBadge($user->getUserIdentifier(), static fn () => $user));
@@ -69,16 +65,5 @@ final class ApiKeyAuthenticator extends AbstractAuthenticator
     public function onAuthenticationFailure(Request $request, AuthenticationException $exception): Response
     {
         return ErrorResponse::create(ErrorCode::UNAUTHORIZED);
-    }
-
-    private function touch(ApiKey $key): void
-    {
-        $lastUsedAt = $key->getLastUsedAt();
-        $threshold = (new \DateTimeImmutable())->sub(new \DateInterval(self::TOUCH_INTERVAL));
-
-        if (null === $lastUsedAt || $lastUsedAt < $threshold) {
-            $key->setLastUsedAt(new \DateTimeImmutable());
-            $this->em->flush();
-        }
     }
 }

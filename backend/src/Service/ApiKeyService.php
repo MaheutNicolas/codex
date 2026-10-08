@@ -44,6 +44,18 @@ final class ApiKeyService
         return $this->serialize($key);
     }
 
+    /** Writing the last use date on every request would be wasteful: it is refreshed at most every 5 minutes. */
+    public function markUsed(ApiKey $key): void
+    {
+        $lastUsedAt = $key->getLastUsedAt();
+        $threshold = (new \DateTimeImmutable())->sub(new \DateInterval('PT5M'));
+
+        if (null === $lastUsedAt || $lastUsedAt < $threshold) {
+            $key->setLastUsedAt(new \DateTimeImmutable());
+            $this->em->flush();
+        }
+    }
+
     private function findOrCreate(User $user, Book $book): ApiKey
     {
         $key = $this->repository->findOneBy(['book' => $book]);

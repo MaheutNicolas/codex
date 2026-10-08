@@ -16,4 +16,17 @@ final readonly class Viewpoint
         public bool $includeSecrets = false,
     ) {
     }
+
+    /** Whether an event is visible from this point of view (the same rule as the timeline and search queries). */
+    public function allows(bool $revealed, ?int $chapter): bool
+    {
+        if (!$this->includeSecrets && !$revealed) {
+            return false;
+        }
+        if (null !== $this->maxChapter) {
+            return null === $chapter ? $this->includeSecrets : $chapter <= $this->maxChapter;
+        }
+
+        return true;
+    }
 }

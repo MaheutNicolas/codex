@@ -17,6 +17,7 @@ export default defineConfig({
     proxy: {
       '/api': backend,
       '/health': backend,
+      '/mcp': backend,
     },
   },
   build: {

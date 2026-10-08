@@ -34,10 +34,13 @@ watch(
   { immediate: true },
 )
 
-async function copy() {
+// The address an AI connects to: the key is part of it.
+const mcpUrl = computed(() => (key.value ? `${window.location.origin}/mcp/${key.value.token}` : ''))
+
+async function copy(text = key.value.token, message = 'keys.copied') {
   try {
-    await navigator.clipboard.writeText(key.value.token)
-    toast.success(t('keys.copied'))
+    await navigator.clipboard.writeText(text)
+    toast.success(t(message))
   } catch {
     toast.error(t('keys.copyFailed'))
   }
@@ -81,7 +84,7 @@ async function regenerate() {
           :aria-label="t('keys.tokenLabel')"
           @focus="$event.target.select()"
         />
-        <UiButton @click="copy">
+        <UiButton @click="copy()">
           <Copy aria-hidden="true" />
           {{ t('keys.copy') }}
         </UiButton>
@@ -100,6 +103,28 @@ async function regenerate() {
         </UiButton>
         <p class="c-field__hint">{{ t('keys.regenerateHint') }}</p>
       </div>
+    </section>
+
+    <section v-if="key" class="c-card key-card key-card--spaced" aria-labelledby="mcp-title">
+      <h2 id="mcp-title" class="c-card__title">{{ t('keys.mcp.title') }}</h2>
+      <p class="u-muted">{{ t('keys.mcp.text') }}</p>
+
+      <div class="key-card__token">
+        <input
+          class="c-field__input key-card__input"
+          type="text"
+          readonly
+          :value="mcpUrl"
+          :aria-label="t('keys.mcp.label')"
+          @focus="$event.target.select()"
+        />
+        <UiButton @click="copy(mcpUrl, 'keys.mcp.copied')">
+          <Copy aria-hidden="true" />
+          {{ t('keys.copy') }}
+        </UiButton>
+      </div>
+
+      <p class="c-field__hint">{{ t('keys.mcp.hint') }}</p>
     </section>
 
     <UiDialog :open="confirmOpen" :title="t('keys.confirmTitle')" @dismiss="confirmOpen = false">
