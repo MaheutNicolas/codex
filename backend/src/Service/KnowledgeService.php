@@ -46,6 +46,7 @@ final class KnowledgeService
 
     /**
      * An entry with the events it takes part in (those the reader may see), as an AI reads it in one call.
+     * The events carry the role of the entry but not their other participants: read an event for those.
      *
      * @return array<string, mixed>
      */
@@ -53,7 +54,7 @@ final class KnowledgeService
     {
         $entry = $this->get($book, $slug);
 
-        return $entry + ['events' => $this->timeline->timeline($book, $viewpoint, $entry['id'], $page)];
+        return $entry + ['events' => $this->timeline->timeline($book, $viewpoint, $entry['id'], $page, withParticipants: false)];
     }
 
     /**

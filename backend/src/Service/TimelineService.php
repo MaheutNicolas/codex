@@ -25,11 +25,17 @@ final class TimelineService
     }
 
     /**
+     * @param bool $withParticipants false for a lighter answer: the list of participants of every event is the
+     *                               bulk of it, and an entry's own events already carry its role
+     *
      * @return array{data: list<array<string, mixed>>, total: int, limit: int, offset: int}
      */
-    public function timeline(Book $book, Viewpoint $viewpoint, ?string $knowledgeSlug, Page $page): array
+    public function timeline(Book $book, Viewpoint $viewpoint, ?string $knowledgeSlug, Page $page, bool $withParticipants = true): array
     {
         $result = $this->paginator->paginate($this->events->timelineQuery($book, $viewpoint, $knowledgeSlug), 'e.id', $page);
+        if (!$withParticipants) {
+            return $result;
+        }
 
         $byEvent = [];
         foreach ($this->participants->participantsOf($book, array_column($result['data'], 'id')) as $row) {
@@ -41,6 +47,13 @@ final class TimelineService
 
         return $result;
     }
+
+    /** The highest chapter in which an event is told: how far the story has been written, or null. */
+    public function lastChapter(Book $book): ?int
+    {
+        return $this->events->lastChapter($book);
+    }
+
     /**
      * One event with its detail and participants, if it is visible from this point of view
      * (otherwise it is reported as not found, like an event that does not exist).

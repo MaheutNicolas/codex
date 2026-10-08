@@ -32,13 +32,15 @@ final class CodexTools
     }
 
     /**
-     * Lists every entry of the book (characters, places, systems) with its id, name, type and aliases.
-     * Call it once at the start: it lets you find the id of an entry from a name or a nickname.
-     * Then read an entry with get_knowledge.
+     * Lists every entry of the book (characters, places, systems) with its id, name, type and aliases, and tells
+     * how far the story has been written. Call it once at the start: it lets you find the id of an entry from a
+     * name or a nickname. Then read an entry with get_knowledge. The "book" part gives the title and
+     * "lastChapter", the highest chapter in which an event is told (null if none yet): to continue the story
+     * after it, pass atChapter = lastChapter to the other tools.
      *
      * @param string|null $type Only entries of this type: character, place or system.
      *
-     * @return array{data: list<array<string, mixed>>, total: int}
+     * @return array<string, mixed>
      */
     public function index(?string $type = null): array
     {
@@ -47,28 +49,37 @@ final class CodexTools
         }
         $entries = $this->knowledge->lexicon($this->book, $type);
 
-        return ['data' => $entries, 'total' => \count($entries)];
+        return [
+            'book' => ['title' => $this->book->getName(), 'lastChapter' => $this->timeline->lastChapter($this->book)],
+            'data' => $entries,
+            'total' => \count($entries),
+        ];
     }
 
     /**
-     * Reads one entry in full (summary and description) together with the events it takes part in,
-     * in the order of the story world, each with the role of the entry. Use an id from index or search.
+     * Reads one entry in full (summary and description) together with the events it takes part in, in the order
+     * of the story world, each with the role of the entry (not the other participants: read the event for those).
+     * "events.total" is how many events there are in all; read the next ones with offset. Use an id from index or search.
      *
      * @param string   $id             The id of the entry, e.g. "aldric".
      * @param int|null $atChapter      The reader has read chapters 1 to this one (inclusive): later events are hidden.
      * @param int|null $beforeChapter  The reader has read chapters 1 to this one minus one (use it when writing this chapter).
      * @param bool     $includeSecrets Also show events the reader does not know yet and events never told. Use it only for the author's own knowledge.
+     * @param int      $limit          How many of its events to return (1 to 200).
+     * @param int      $offset         How many of its events to skip, to read the next ones.
      *
      * @return array<string, mixed>
      */
-    public function get_knowledge(string $id, ?int $atChapter = null, ?int $beforeChapter = null, bool $includeSecrets = false): array
+    public function get_knowledge(string $id, ?int $atChapter = null, ?int $beforeChapter = null, bool $includeSecrets = false, int $limit = 30, int $offset = 0): array
     {
-        return $this->call(fn () => $this->knowledge->sheet(
+        $this->checkPage($limit, $offset);
+
+        return $this->withoutDates($this->call(fn () => $this->knowledge->sheet(
             $this->book,
             $id,
             $this->viewpoint($atChapter, $beforeChapter, $includeSecrets),
-            new Page(self::MAX_EVENTS),
-        ));
+            new Page($limit, $offset),
+        )));
     }
 
     /**
@@ -93,9 +104,7 @@ final class CodexTools
         int $limit = 50,
         int $offset = 0,
     ): array {
-        if ($limit < 1 || $limit > self::MAX_EVENTS || $offset < 0) {
-            throw new ToolCallException(\sprintf('The limit must be between 1 and %d and the offset 0 or more.', self::MAX_EVENTS));
-        }
+        $this->checkPage($limit, $offset);
 
         return $this->call(fn () => $this->timeline->timeline(
             $this->book,
@@ -117,11 +126,11 @@ final class CodexTools
      */
     public function get_event(string $id, ?int $atChapter = null, ?int $beforeChapter = null, bool $includeSecrets = false): array
     {
-        return $this->call(fn () => $this->timeline->event(
+        return $this->withoutDates($this->call(fn () => $this->timeline->event(
             $this->book,
             $id,
             $this->viewpoint($atChapter, $beforeChapter, $includeSecrets),
-        ));
+        )));
     }
 
     /**
@@ -153,6 +162,25 @@ final class CodexTools
             \array_slice($terms, 0, 10),
             $limit,
         );
+    }
+
+    private function checkPage(int $limit, int $offset): void
+    {
+        if ($limit < 1 || $limit > self::MAX_EVENTS || $offset < 0) {
+            throw new ToolCallException(\sprintf('The limit must be between 1 and %d and the offset 0 or more.', self::MAX_EVENTS));
+        }
+    }
+
+    /**
+     * The creation and update dates of a record tell an AI nothing about the story: leave them out.
+     *
+     * @param array<string, mixed> $record
+     *
+     * @return array<string, mixed>
+     */
+    private function withoutDates(array $record): array
+    {
+        return array_diff_key($record, ['createdAt' => 0, 'updatedAt' => 0]);
     }
 
     private function viewpoint(?int $atChapter, ?int $beforeChapter, bool $includeSecrets): Viewpoint

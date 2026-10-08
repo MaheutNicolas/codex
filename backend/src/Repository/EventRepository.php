@@ -97,7 +97,7 @@ class EventRepository extends ServiceEntityRepository
      * @param string       $match the full-text query (boolean mode)
      * @param list<string> $likes LIKE patterns, one per word
      *
-     * @return list<array<string, mixed>>
+     * @return array{rows: list<array<string, mixed>>, total: int} the best $limit matches, and how many there are in all
      */
     public function search(Book $book, Viewpoint $viewpoint, string $match, array $likes, int $limit): array
     {
@@ -113,11 +113,27 @@ class EventRepository extends ServiceEntityRepository
             $params['maxChapter'] = $viewpoint->maxChapter;
         }
 
-        $sql = 'SELECT slug AS id, title, summary, chapter, world_order AS worldOrder, '
+        $connection = $this->getEntityManager()->getConnection();
+        $rows = $connection->fetchAllAssociative(
+            'SELECT slug AS id, title, summary, chapter, world_order AS worldOrder, '
             .'MATCH(title, summary, detail) AGAINST (:match IN BOOLEAN MODE) AS score, '
             .$named.' AS named '
-            .'FROM event WHERE '.$where.' ORDER BY named DESC, score DESC, world_order LIMIT '.$limit;
+            .'FROM event WHERE '.$where.' ORDER BY named DESC, score DESC, world_order LIMIT '.$limit,
+            $params,
+        );
 
-        return $this->getEntityManager()->getConnection()->fetchAllAssociative($sql, $params);
+        return ['rows' => $rows, 'total' => (int) $connection->fetchOne('SELECT COUNT(*) FROM event WHERE '.$where, $params)];
+    }
+
+    /** The highest chapter in which an event is told, or null when no event has a chapter yet. */
+    public function lastChapter(Book $book): ?int
+    {
+        $chapter = $this->createQueryBuilder('e')
+            ->select('MAX(e.chapter)')
+            ->andWhere('e.book = :book')->setParameter('book', $book)
+            ->getQuery()
+            ->getSingleScalarResult();
+
+        return null === $chapter ? null : (int) $chapter;
     }
 }

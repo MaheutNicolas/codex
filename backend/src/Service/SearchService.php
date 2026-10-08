@@ -20,9 +20,11 @@ final class SearchService
     }
 
     /**
+     * An entry has a "name", an event a "title" (as everywhere else in the API).
+     *
      * @param list<string> $terms the words of the search (letters and digits only)
      *
-     * @return array{data: list<array<string, mixed>>, total: int}
+     * @return array{data: list<array<string, mixed>>, total: int} "total" counts every match, not only the returned ones
      */
     public function search(Book $book, Viewpoint $viewpoint, array $terms, int $limit): array
     {
@@ -33,8 +35,11 @@ final class SearchService
         // Plain match on names, identifiers, aliases and tags, word by word (finds nicknames and short words).
         $likes = array_values(array_map(static fn (string $term) => '%'.addcslashes($term, '%_\\').'%', $words));
 
+        $knowledge = $this->knowledge->search($book, $match, $likes, $limit);
+        $events = $this->events->search($book, $viewpoint, $match, $likes, $limit);
+
         $results = [];
-        foreach ($this->knowledge->search($book, $match, $likes, $limit) as $row) {
+        foreach ($knowledge['rows'] as $row) {
             $results[] = [
                 'kind' => 'knowledge',
                 'id' => $row['id'],
@@ -45,11 +50,11 @@ final class SearchService
                 'score' => (float) $row['score'],
             ];
         }
-        foreach ($this->events->search($book, $viewpoint, $match, $likes, $limit) as $row) {
+        foreach ($events['rows'] as $row) {
             $results[] = [
                 'kind' => 'event',
                 'id' => $row['id'],
-                'name' => $row['title'],
+                'title' => $row['title'],
                 'chapter' => null === $row['chapter'] ? null : (int) $row['chapter'],
                 'worldOrder' => (int) $row['worldOrder'],
                 'summary' => $row['summary'],
@@ -59,13 +64,15 @@ final class SearchService
         }
 
         usort($results, static fn (array $a, array $b) => [$b['named'], $b['score']] <=> [$a['named'], $a['score']]);
-        $results = \array_slice($results, 0, $limit);
 
-        return ['data' => array_map(static function (array $result) {
-            unset($result['named']);
-            $result['score'] = round($result['score'], 3);
+        return [
+            'data' => array_map(static function (array $result) {
+                unset($result['named']);
+                $result['score'] = round($result['score'], 3);
 
-            return $result;
-        }, $results), 'total' => \count($results)];
+                return $result;
+            }, \array_slice($results, 0, $limit)),
+            'total' => $knowledge['total'] + $events['total'],
+        ];
     }
 }

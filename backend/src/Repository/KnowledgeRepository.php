@@ -80,21 +80,24 @@ class KnowledgeRepository extends ServiceEntityRepository
      * @param string       $match the full-text query (boolean mode)
      * @param list<string> $likes LIKE patterns, one per word
      *
-     * @return list<array<string, mixed>>
+     * @return array{rows: list<array<string, mixed>>, total: int} the best $limit matches, and how many there are in all
      */
     public function search(Book $book, string $match, array $likes, int $limit): array
     {
         $any = SearchSql::likeAny(['name', 'slug', SearchSql::jsonText('aliases')], \count($likes));
         $named = SearchSql::likeCount(['name', 'slug', SearchSql::jsonText('aliases')], \count($likes));
-        $sql = 'SELECT slug AS id, name, type, summary, '
+        $where = 'book_id = :book AND (MATCH(name, summary, description) AGAINST (:match IN BOOLEAN MODE) OR '.$any.')';
+        $params = ['book' => $book->getId(), 'match' => $match] + SearchSql::likeParams($likes);
+        $connection = $this->getEntityManager()->getConnection();
+
+        $rows = $connection->fetchAllAssociative(
+            'SELECT slug AS id, name, type, summary, '
             .'MATCH(name, summary, description) AGAINST (:match IN BOOLEAN MODE) AS score, '
             .$named.' AS named '
-            .'FROM knowledge WHERE book_id = :book AND (MATCH(name, summary, description) AGAINST (:match IN BOOLEAN MODE) OR '.$any.') '
-            .'ORDER BY named DESC, score DESC, name LIMIT '.$limit;
-
-        return $this->getEntityManager()->getConnection()->fetchAllAssociative(
-            $sql,
-            ['book' => $book->getId(), 'match' => $match] + SearchSql::likeParams($likes),
+            .'FROM knowledge WHERE '.$where.' ORDER BY named DESC, score DESC, name LIMIT '.$limit,
+            $params,
         );
+
+        return ['rows' => $rows, 'total' => (int) $connection->fetchOne('SELECT COUNT(*) FROM knowledge WHERE '.$where, $params)];
     }
 }
