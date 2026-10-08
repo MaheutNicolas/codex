@@ -68,6 +68,32 @@ class RelationRepository extends ServiceEntityRepository
     }
 
     /**
+     * Every state of the relations an entry is in, whichever side it is on, with the names and types of the two
+     * entries, by chapter. A few rows per other entry: read them all, then pick the right state in PHP.
+     *
+     * @return list<array<string, mixed>>
+     */
+    public function involving(Book $book, string $knowledgeSlug): array
+    {
+        $rows = $this->createQueryBuilder('r')
+            ->select('r.slug AS id', 's.slug AS sourceId', 's.name AS sourceName', 's.type AS sourceType', 't.slug AS targetId', 't.name AS targetName', 't.type AS targetType', 'r.type', 'r.chapter', 'r.revealed', 'r.note')
+            ->join('r.source', 's')
+            ->join('r.target', 't')
+            ->andWhere('r.book = :book')->setParameter('book', $book)
+            ->andWhere('s.slug = :knowledge OR t.slug = :knowledge')->setParameter('knowledge', $knowledgeSlug)
+            ->orderBy('r.chapter')
+            ->addOrderBy('r.slug')
+            ->getQuery()
+            ->getArrayResult();
+
+        return array_map(static function (array $row) {
+            $row['chapter'] = (int) $row['chapter'];
+
+            return $row;
+        }, $rows);
+    }
+
+    /**
      * Every relation of a book as plain arrays, for the export.
      *
      * @return list<array<string, mixed>>

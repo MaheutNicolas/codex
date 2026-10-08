@@ -9,6 +9,7 @@ use App\Entity\Knowledge;
 use App\Error\ApiException;
 use App\Service\KnowledgeService;
 use App\Service\RelatedService;
+use App\Service\RelationStateService;
 use App\Service\SearchService;
 use App\Service\TimelineService;
 use Mcp\Exception\ToolCallException;
@@ -23,6 +24,7 @@ use Symfony\Component\DependencyInjection\Attribute\Exclude;
 final class CodexTools
 {
     private const MAX_EVENTS = 200;
+    private const RELATIONS_IN_SHEET = 30;
 
     public function __construct(
         private readonly Book $book,
@@ -30,6 +32,7 @@ final class CodexTools
         private readonly TimelineService $timeline,
         private readonly SearchService $search,
         private readonly RelatedService $related,
+        private readonly RelationStateService $relationStates,
     ) {
     }
 
@@ -62,7 +65,10 @@ final class CodexTools
      * Reads one entry in full (summary and description) together with the events it takes part in, in the order
      * of the story world, each with the role of the entry (not the other participants: read the event for those).
      * "events.total" is how many events there are in all; read the next ones with offset (or list all of them
-     * with timeline and knowledgeId, which also shows the other participants). Use an id from index or search.
+     * with timeline and knowledgeId, which also shows the other participants). It also gives the relations of the
+     * entry as they stand at the chapter reached ("relations": for each other entry, the current type, a sentence
+     * naming both, the chapter it holds since and a note; the 30 most recently changed, "relations.total" says how
+     * many there are). Use get_relations for the whole history or the next ones. Use an id from index or search.
      *
      * @param string   $id             The id of the entry, e.g. "aldric".
      * @param int|null $atChapter      The reader has read chapters 1 to this one (inclusive): later events are hidden.
@@ -76,20 +82,52 @@ final class CodexTools
     public function get_knowledge(string $id, ?int $atChapter = null, ?int $beforeChapter = null, bool $includeSecrets = false, int $limit = 30, int $offset = 0): array
     {
         $this->checkPage($limit, $offset);
+        $viewpoint = $this->viewpoint($atChapter, $beforeChapter, $includeSecrets);
 
-        return $this->withoutDates($this->call(fn () => $this->knowledge->sheet(
-            $this->book,
-            $id,
-            $this->viewpoint($atChapter, $beforeChapter, $includeSecrets),
-            new Page($limit, $offset),
-        )));
+        $sheet = $this->withoutDates($this->call(fn () => $this->knowledge->sheet($this->book, $id, $viewpoint, new Page($limit, $offset))));
+        $sheet['relations'] = $this->call(fn () => $this->relationStates->page($this->book, $id, $viewpoint, false, new Page(self::RELATIONS_IN_SHEET)));
+
+        return $sheet;
     }
 
     /**
-     * Finds the entries most linked to one entry: those that take part in the same events, the most often first.
-     * Use it to see who and what surrounds a character or a place before writing a scene with it. Each result says
-     * how many events they share and in which chapters (first and last). "total" counts every linked entry.
-     * Read an entry in full with get_knowledge, or the events they share with timeline and knowledgeId.
+     * Reads the relations of one entry (allies, enemies, mentors, members of a group...) as they stand at the chapter
+     * reached: for each other entry, the current type, a sentence naming both entries (so that the direction is
+     * clear), the chapter it has held since (null: since the start of the book) and a note. The most recently
+     * changed come first. Relations change over the story: with withHistory, each one also lists all its states in
+     * order (for example allies from the start, enemies from chapter 6, no longer linked from chapter 9), and the
+     * pairs that are no longer linked are listed too, marked "ended".
+     *
+     * @param string   $id             The id of the entry, e.g. "aldric".
+     * @param int|null $atChapter      The reader has read chapters 1 to this one (inclusive): later changes are hidden.
+     * @param int|null $beforeChapter  The reader has read chapters 1 to this one minus one (use it when writing this chapter).
+     * @param bool     $includeSecrets Also show relations the reader does not know yet. Use it only for the author's own knowledge.
+     * @param bool     $withHistory    Also list every earlier state of each relation, and the ended ones.
+     * @param int      $limit          How many relations to return (1 to 200).
+     * @param int      $offset         How many relations to skip, to read the next ones.
+     *
+     * @return array<string, mixed>
+     */
+    public function get_relations(string $id, ?int $atChapter = null, ?int $beforeChapter = null, bool $includeSecrets = false, bool $withHistory = false, int $limit = 30, int $offset = 0): array
+    {
+        $this->checkPage($limit, $offset);
+
+        return $this->call(fn () => $this->relationStates->page(
+            $this->book,
+            $id,
+            $this->viewpoint($atChapter, $beforeChapter, $includeSecrets),
+            $withHistory,
+            new Page($limit, $offset),
+        ));
+    }
+
+    /**
+     * Finds the entries linked to one entry: first those it has a relation with (allies, enemies, mentors...: the
+     * "relation" part gives the current type and a sentence), then those that take part in the same events, the most
+     * often first. Use it to see who and what surrounds a character or a place before writing a scene with it. Each
+     * result says where it comes from ("source": relation, events or both) and, for shared events, how many and in
+     * which chapters (first and last). "total" counts every linked entry. Read an entry in full with get_knowledge,
+     * its relations and their history with get_relations, or the events they share with timeline and knowledgeId.
      *
      * @param string   $id             The id of the entry, e.g. "aldric".
      * @param int|null $atChapter      The reader has read chapters 1 to this one (inclusive): later events do not count.

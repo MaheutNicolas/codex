@@ -3,10 +3,12 @@
 namespace App\Controller;
 
 use App\Api\ApiHelper;
+use App\Api\Page;
 use App\Entity\Book;
 use App\Entity\Knowledge;
 use App\Service\KnowledgeService;
 use App\Service\RelatedService;
+use App\Service\RelationStateService;
 use App\Validation\Validate;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -19,6 +21,7 @@ final class KnowledgeController
     public function __construct(
         private readonly KnowledgeService $service,
         private readonly RelatedService $related,
+        private readonly RelationStateService $relationStates,
         private readonly ApiHelper $api,
         private readonly Validate $validate,
     ) {
@@ -57,6 +60,22 @@ final class KnowledgeController
             $id,
             $this->validate->viewpoint($request),
             $this->validate->intQuery($request, 'limit', 1, 50) ?? 20,
+        ));
+    }
+
+    /**
+     * The relations of this entry as they stand from a point of view: for each other entry, the state that holds at
+     * the chapter reached. "?withHistory=true" adds every visible state of each pair (and keeps the ended ones).
+     */
+    #[Route('/{id}/relations', methods: ['GET'])]
+    public function relations(Book $book, string $id, Request $request): JsonResponse
+    {
+        return ApiHelper::json($this->relationStates->page(
+            $book,
+            $id,
+            $this->validate->viewpoint($request),
+            $this->validate->boolQuery($request, 'withHistory') ?? false,
+            new Page($this->validate->intQuery($request, 'limit', 1, 200) ?? 30, $this->validate->intQuery($request, 'offset', 0) ?? 0),
         ));
     }
 

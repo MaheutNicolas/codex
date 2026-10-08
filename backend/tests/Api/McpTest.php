@@ -100,7 +100,7 @@ final class McpTest extends ApiTestCase
         self::assertSame('2025-03-26', $init['body']['result']['protocolVersion']);
     }
 
-    public function testTheServerOffersSixReadOnlyTools(): void
+    public function testTheServerOffersSevenReadOnlyTools(): void
     {
         $session = $this->openSession();
 
@@ -108,7 +108,7 @@ final class McpTest extends ApiTestCase
         $names = array_column($tools, 'name');
         sort($names);
 
-        self::assertSame(['get_event', 'get_knowledge', 'get_related', 'index', 'search', 'timeline'], $names, 'Reading only: no tool writes anything.');
+        self::assertSame(['get_event', 'get_knowledge', 'get_related', 'get_relations', 'index', 'search', 'timeline'], $names, 'Reading only: no tool writes anything.');
         foreach ($tools as $tool) {
             self::assertNotEmpty($tool['description'], $tool['name'].' needs a description: it is what the AI reads to choose a tool.');
             foreach ($tool['inputSchema']['properties'] ?? [] as $property => $schema) {
