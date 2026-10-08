@@ -84,8 +84,8 @@ class KnowledgeRepository extends ServiceEntityRepository
      */
     public function search(Book $book, string $match, array $likes, int $limit): array
     {
-        $any = SearchSql::likeAny(['name', 'slug', 'aliases'], \count($likes));
-        $named = SearchSql::likeCount(['name', 'slug', 'aliases'], \count($likes));
+        $any = SearchSql::likeAny(['name', 'slug', SearchSql::jsonText('aliases')], \count($likes));
+        $named = SearchSql::likeCount(['name', 'slug', SearchSql::jsonText('aliases')], \count($likes));
         $sql = 'SELECT slug AS id, name, type, summary, '
             .'MATCH(name, summary, description) AGAINST (:match IN BOOLEAN MODE) AS score, '
             .$named.' AS named '

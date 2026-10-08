@@ -9,6 +9,10 @@ doctrine:
         default_table_options:
             engine: InnoDB
 
+        types:
+            # The same json type, with accents written as they are (see the class).
+            json: App\Doctrine\UnescapedJsonType
+
         profiling_collect_backtrace: '%kernel.debug%'
     orm:
         validate_xml_mapping: true

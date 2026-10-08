@@ -43,6 +43,15 @@ final class SearchSql
     }
 
     /**
+     * A JSON column (aliases, tags) as text that is compared without regard to case and accents, like the
+     * other columns. A JSON column otherwise compares as binary text on both MySQL and MariaDB.
+     */
+    public static function jsonText(string $column): string
+    {
+        return "CONVERT($column USING utf8mb4) COLLATE utf8mb4_unicode_ci";
+    }
+
+    /**
      * @param list<string> $columns
      *
      * @return list<string>

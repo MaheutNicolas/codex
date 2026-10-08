@@ -15,9 +15,9 @@ Les chemins `src/`, `config/` et `migrations/` cités plus bas sont ceux de `bac
 
 - PHP 8.4+, **Symfony 8.1 skeleton** (`symfony/skeleton`, pas le webapp-pack)
 - **Doctrine ORM + Doctrine Migrations**
-- **MySQL 8** (WAMP en local, MySQL en production), tables en **InnoDB**
+- **MySQL 8** (WAMP en local), ou **MariaDB 10.11+** (essayée en 11.4 : voir `DEPLOY.md`), tables en **InnoDB**
 - Pas d'API Platform : contrôleurs JSON écrits à la main
-- Déploiement : VPS Debian, nginx + PHP-FPM, Certbot
+- Déploiement : VPS Debian, nginx + PHP-FPM, Certbot (voir [DEPLOY.md](DEPLOY.md))
 
 Paquets installés : `symfony/orm-pack`, `symfony/serializer`, `symfony/validator`, `nelmio/cors-bundle`, et en dev `symfony/maker-bundle`.
 

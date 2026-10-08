@@ -101,8 +101,8 @@ class EventRepository extends ServiceEntityRepository
      */
     public function search(Book $book, Viewpoint $viewpoint, string $match, array $likes, int $limit): array
     {
-        $any = SearchSql::likeAny(['title', 'slug', 'tags'], \count($likes));
-        $named = SearchSql::likeCount(['title', 'slug', 'tags'], \count($likes));
+        $any = SearchSql::likeAny(['title', 'slug', SearchSql::jsonText('tags')], \count($likes));
+        $named = SearchSql::likeCount(['title', 'slug', SearchSql::jsonText('tags')], \count($likes));
         $where = 'book_id = :book AND (MATCH(title, summary, detail) AGAINST (:match IN BOOLEAN MODE) OR '.$any.')';
         $params = ['book' => $book->getId(), 'match' => $match] + SearchSql::likeParams($likes);
         if (!$viewpoint->includeSecrets) {
