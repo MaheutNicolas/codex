@@ -56,7 +56,7 @@ export default {
     },
     deleteTitle: 'Supprimer ce livre ?',
     deleteText:
-      'Le livre « {name} » et tout son contenu (fiches, événements, clés d\'API) seront supprimés définitivement.',
+      'Le livre « {name} » et tout son contenu (fiches, événements, relations, clé d\'API) seront supprimés définitivement.',
     created: 'Livre créé.',
     renamed: 'Livre renommé.',
     deleted: 'Livre supprimé.',
@@ -136,7 +136,7 @@ export default {
     saved: 'Fiche enregistrée.',
     deleted: 'Fiche supprimée.',
     deleteTitle: 'Supprimer cette fiche ?',
-    deleteText: 'La fiche « {name} » sera supprimée définitivement, ainsi que ses liens avec les événements.',
+    deleteText: 'La fiche « {name} » sera supprimée définitivement, ainsi que ses liens avec les événements et ses relations.',
     discardTitle: 'Abandonner les modifications ?',
     discardText: 'Les changements non enregistrés seront perdus.',
     discard: 'Abandonner',

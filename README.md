@@ -1,6 +1,6 @@
 # Codex
 
-Bibliothèque narrative pour l'écriture d'un livre : elle stocke les connaissances de l'histoire (personnages, lieux, systèmes…) et sa chronologie, et les expose via une API que l'IA pourra interroger pendant l'écriture (plus tard via un serveur MCP).
+Bibliothèque narrative pour l'écriture d'un livre : elle stocke les connaissances de l'histoire (personnages, lieux, systèmes…) sa chronologie et l'évolution des relations entre eux, et les expose via une API que l'IA pourra interroger pendant l'écriture (plus tard via un serveur MCP).
 
 ## Structure du dépôt
 
@@ -36,7 +36,7 @@ Paquets installés : `symfony/orm-pack`, `symfony/serializer`, `symfony/validato
 
 ## Tests
 
-Le backend a des tests automatiques (PHPUnit) : `cd backend && composer test` (ou `php vendor/bin/phpunit`), une trentaine de secondes. Ils s'exécutent sur une **vraie base MySQL/MariaDB**, parce que la recherche plein texte et la transaction de l'import ne se testent pas sur autre chose.
+Le backend a des tests automatiques (PHPUnit) : `cd backend && composer test` (ou `php vendor/bin/phpunit`), environ une minute. Ils s'exécutent sur une **vraie base MySQL/MariaDB**, parce que la recherche plein texte et la transaction de l'import ne se testent pas sur autre chose.
 
 **Première fois** (la base de test s'appelle `codex_test` : le suffixe `_test` est ajouté par `config/packages/doctrine.yaml`, jamais la base `codex` de développement) :
 1. `backend/.env` doit exister (`cp .env.example .env`).
@@ -53,7 +53,7 @@ Le backend a des tests automatiques (PHPUnit) : `cd backend && composer test` (o
 - `Api/RelationTest` : les états de relation (un par couple et par chapitre, dans les deux sens), l'historique par chapitre, la fin d'une relation, la suppression en cascade, l'import et l'export.
 - `Api/RelationStateTest` et `Unit/RelationStatesTest` : l'état d'une relation à un chapitre (progression allié, ennemi, fin), les deux côtés, les relations orientées, les secrets, l'historique, `get_knowledge`, `get_relations` et `get_related` fusionné.
 - `Api/RelationshipTest` : la relation de deux fiches (statut, état actuel, historique, événements partagés, ordre des deux fiches, secrets, erreurs) par la route et par l'outil MCP.
-- `Api/McpTest` : le serveur MCP de bout en bout (poignée de main, les cinq outils en lecture seule, erreurs lisibles, clé inconnue, domaine non autorisé).
+- `Api/McpTest` : le serveur MCP de bout en bout (poignée de main, les huit outils en lecture seule, erreurs lisibles, clé inconnue, domaine non autorisé).
 - `Unit/` : règle de visibilité d'un événement, fabrication des requêtes de recherche, complétude des codes d'erreur.
 
 **Comment ils sont écrits.** Les tests valident vraiment les écritures (pas de transaction annulée à la fin, car l'index plein texte de MySQL ne voit les lignes qu'une fois validées) : chaque test crée ses propres comptes et les supprime à la fin, la base supprimant en cascade leurs livres. `ApiTestCase` refuse de tourner sur une base dont le nom ne finit pas par `_test`. Pour ajouter un test, étendre `ApiTestCase` : `loginAsNewUser()`, `createBook()`, `import()` (le moyen le plus rapide de préparer des données, avec `story()` comme petite histoire toute prête), `api()` et `assertError()`.
@@ -74,11 +74,12 @@ Le frontend n'a pas encore de tests automatiques : il est vérifié à la main, 
 
 ## Modèle de données
 
-Un **compte** (`user`) possède des **livres** (`book`). Chaque livre contient deux groupes de données :
+Un **compte** (`user`) possède des **livres** (`book`). Chaque livre contient trois groupes de données :
 - **Connaissances** : la table `knowledge`, une seule table pour toutes les catégories (personnage, groupe, espèce, lieu, objet, système, capacité, concept, rang, thème). Ajouter une catégorie = ajouter une valeur de `type` (constante `Knowledge::TYPES`), sans changer la structure.
 - **Chronologie** : la table `event`, reliée aux connaissances par `event_participant`.
+- **Relations** : la table `knowledge_relation`, l'état de la relation entre deux fiches à partir d'un chapitre (voir plus bas).
 
-Les connaissances et les événements ont une **clé technique** entière (jamais exposée) et un **slug** lisible, unique dans un livre : l'API l'expose sous le nom `id` (`aldric`, `evt-0042`). Deux livres peuvent donc contenir chacun un `aldric`.
+Les connaissances, les événements et les relations ont une **clé technique** entière (jamais exposée) et un **slug** lisible, unique dans un livre : l'API l'expose sous le nom `id` (`aldric`, `evt-0042`, `rel-0007`). Deux livres peuvent donc contenir chacun un `aldric`.
 
 ### User (`user`)
 | Champ | Type | Notes |
@@ -179,7 +180,7 @@ Points clés :
 - `summary` séparé de `description`/`detail` pour que l'IA reçoive des réponses courtes d'abord.
 - `revealed` sépare la vérité du monde de ce que le lecteur sait déjà.
 - Deux axes de temps indépendants : `worldOrder` (quand ça arrive dans le monde) et `chapter` (quand le lecteur le découvre).
-- Les relations entre connaissances (alliée, ennemie…) ne sont pas dans la v1 ; elles pourront être ajoutées plus tard dans une table `relation` bornée par des événements.
+- Une relation est un **état daté** (voir `knowledge_relation`) : quand elle change, on ajoute un état au chapitre du changement au lieu de modifier l'ancien, et l'historique d'un couple est la liste de ses états.
 
 ## Index pour l'IA
 
@@ -270,7 +271,7 @@ Décisions prises :
 | Session | `POST` ou `GET /api/auth/logout`, `GET /api/auth/me` | `me` : session ou clé ; `logout` : session |
 | Livres | `GET` et `POST /api/books`, `PATCH` et `DELETE /api/books/{bookId}` | session uniquement |
 | Livre | `GET /api/books/{bookId}` | session, ou clé de ce livre |
-| Contenu | `/api/books/{bookId}/knowledge`, `/events`, `/event-participants`, `/index` | session, ou clé de ce livre (écriture : clé `write`) |
+| Contenu | `/api/books/{bookId}/knowledge`, `/events`, `/event-participants`, `/relations`, `/index` | session, ou clé de ce livre (écriture : clé `write`) |
 | Clé | `GET /api/books/{bookId}/api-key` (la crée si besoin), `POST /api/books/{bookId}/api-key/regenerate` | session uniquement |
 
 **Deux façons de s'authentifier**, sur deux pare-feux Symfony (`config/packages/security.yaml`) :
@@ -338,9 +339,10 @@ Vite redirige `/api` et `/health` vers le backend (`vite.config.js`) : l'app et 
 | `composables/` | état partagé sans Pinia : `useAuth`, `useBook`, `useTheme`, `useToast` |
 | `components/ui/` | éléments de base : `UiButton`, `UiField` (champ ou zone de texte), `UiSelect`, `UiTagInput`, `UiDialog` (fenêtre ou panneau latéral ; il ne se ferme jamais seul, il demande à être fermé avec l'événement `dismiss`), `ToastHost` |
 | `components/library/` | composants propres à la bibliothèque (`KnowledgePanel`) |
+| `components/timeline/`, `components/relations/`, `components/import/` | le panneau d'un événement (`EventPanel`), celui d'une relation (`RelationPanel`), la vérification et la correction d'un import (`ImportReview`, `ImportItemPanel`) |
 | `components/layout/` | `AppShell`, `AppSidebar`, `ThemeMenu` |
 | `views/` | une page par route |
-| `constants.js`, `utils/` | types de fiches et leurs icônes (à tenir d'accord avec `Knowledge::TYPES` du backend), formatage de dates, fonctions de texte (`normalize`, `slugify`) |
+| `constants.js`, `utils/` | types de fiches et de relations avec leurs icônes (à tenir d'accord avec `Knowledge::TYPES` et `Relation::TYPES` du backend), formatage de dates, fonctions de texte (`normalize`, `slugify`), règles de l'import (`importDocument`) et de l'export (`exportDocument`) |
 | `router.js` | routes et garde de connexion |
 
 **Styles** : fichiers SCSS globaux, nommés en BEM avec préfixe (`.c-button--primary`, `.sidebar__link`), jamais de style dans les composants Vue. Aucun fichier SCSS ne contient de couleur : ils lisent des variables CSS.
@@ -351,7 +353,7 @@ Vite redirige `/api` et `/health` vers le backend (`vite.config.js`) : l'app et 
 
 **Vérification** : l'interface a été testée dans un vrai navigateur (Edge sans fenêtre, piloté par script) : connexion échouée puis réussie, création, renommage et suppression de livres, erreurs de formulaire, menu d'apparence, modes clair et sombre, les cinq couleurs, mobile avec tiroir, persistance après rechargement, déconnexion. Ces scripts jetables ne sont pas dans le dépôt.
 
-**Écrans prévus** : bibliothèque (liste filtrable par type, recherche par nom ou alias), fiche en édition, chronologie triée par `worldOrder`, édition d'événement avec sélecteur de participants alimenté par `/index`, clés d'API (création, copie unique, suppression, URL MCP prête à copier), **import en masse**.
+**Écrans** : connexion, livres, bibliothèque (liste filtrable par type, recherche par nom ou alias, fiche en édition), chronologie (triée par `worldOrder`, édition d'un événement et de ses participants), relations (états par chapitre, filtres par fiche et par couple), import (vérification et correction avant d'enregistrer), export (JSON Codex et Markdown), clé d'API et adresse du serveur MCP.
 
 **Import** (`views/ImportView.vue`, `components/import/`, `utils/importDocument.js`) : l'IA produit un document JSON, on le colle, on le vérifie et on le corrige dans le navigateur, puis on l'envoie d'un coup. Le maximum se passe dans le navigateur, le serveur reste simple.
 1. **Consignes** : un texte à copier pour l'IA, **généré dans le navigateur** (`import.instructions.text` dans `fr.js`) à partir des fiches et événements déjà présents (identifiants et noms), pour qu'elle les réutilise sans créer de doublons. Il donne le format exact et les règles.
@@ -410,7 +412,7 @@ Sans `includeSecrets`, seuls les événements `revealed = true` sont visibles. A
 
 **Recherche** : index `FULLTEXT` MySQL (fiches : nom, résumé, description ; événements : titre, résumé, détail) en mode booléen, avec un début de mot accepté (`cita` trouve `citadelle`), plus une comparaison simple sur le nom, l'identifiant, les alias et les étiquettes, mot par mot, pour trouver un surnom ou un mot court. Les mots de moins de 3 lettres ne comptent que s'ils sont seuls. Un résultat dont le nom, l'identifiant, un alias ou une étiquette contient des mots de la recherche passe avant un résultat trouvé seulement dans les textes. Le texte est découpé en mots (lettres et chiffres) : les opérateurs de recherche ne sont pas interprétés. Réponse : `{ data: [{ kind: "knowledge" | "event", id, name | title, summary, score, … }], total }` : une fiche a un `name`, un événement un `title` (comme partout dans l'API), et `total` compte **toutes** les correspondances, pas seulement les `limit` renvoyées.
 
-### Étape 5 : serveur MCP distant (en cours)
+### Étape 5 : serveur MCP distant (terminée)
 
 **Fait** : une route `/mcp/{clé}` de l'application Symfony, avec le SDK PHP officiel (`mcp/sdk` 0.8, encore en 0.x donc à surveiller) et le transport HTTP « Streamable ». Elle accepte les deux ères du protocole (poignée de main `initialize` avec sessions, et la révision sans état de 2026).
 
@@ -419,18 +421,18 @@ Sans `includeSecrets`, seuls les événements `revealed = true` sont visibles. A
 - **Sessions** : stockées en fichiers dans `var/mcp-sessions` (le serveur web doit pouvoir y écrire). Seuls les noms de domaine de `MCP_ALLOWED_HOSTS` sont servis (en-tête `Host`, `AllowedHostMiddleware`) ; l'en-tête `Origin` n'est pas filtré, car le serveur est public et chaque requête est authentifiée par la clé de l'adresse. Cette liste se règle avec `MCP_ALLOWED_HOSTS` (liste séparée par des virgules, `localhost,127.0.0.1,[::1]` par défaut) : **en production, y ajouter le nom de domaine public** dans `backend/.env.local`.
 - Pas d'outil d'écriture : les ajouts passent par l'import de l'étape 3.
 
-**Reste** : mettre l'application en ligne en HTTPS (ChatGPT n'accepte que des serveurs publics en HTTPS ; un tunnel peut servir de test) et essayer le connecteur dans ChatGPT et Claude. OAuth n'est à ajouter que si Claude refuse la clé dans l'adresse.
+**État** : le serveur est en ligne en HTTPS (voir `DEPLOY.md`) et fonctionne avec Claude comme connecteur personnalisé : la clé dans l'adresse a suffi, OAuth n'a pas été nécessaire. ChatGPT réserve les connecteurs MCP personnalisés aux abonnements payants ; sans abonnement, on lui donne le contenu du livre par l'export Markdown. Après une mise à jour du serveur, recharger le connecteur dans l'IA : elle garde en mémoire la liste des outils.
 
 **Tester en local** sans IA : `npx @modelcontextprotocol/inspector`, transport « Streamable HTTP », adresse `http://127.0.0.1:8000/mcp/<clé>`.
 
-### Étape 6 : relations entre fiches (en cours)
+### Étape 6 : relations entre fiches (terminée)
 
 Une relation est un **état** daté d'un chapitre (voir la table `knowledge_relation`) ; l'historique d'un couple est la liste de ses états.
 1. **Fait** : `get_related` (fiches liées par les événements partagés).
 2. **Fait** : table, API `/relations`, import et export (section `relations`).
 3. **Fait** : outils MCP (`relations` dans `get_knowledge`, nouvel outil `get_relations`, `get_related` qui fusionne relations et événements partagés).
 4. **Fait** : page « Relations » dans l'app (liste par chapitre, filtres par fiche et par couple, panneau d'édition, lien depuis une fiche), section « Relations » dans la vérification de l'import avec les consignes pour l'IA, relations dans l'export Markdown.
-5. À faire : documentation et finitions.
+5. **Fait** : documentation et finitions. Une recherche de la relation de deux fiches s'y est ajoutée : `GET …/knowledge/{id}/relations/{otherId}` et l'outil `get_relationship` (statut du couple, relation actuelle, historique, événements partagés).
 
 ### Plus tard
 

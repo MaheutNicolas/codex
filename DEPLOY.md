@@ -186,6 +186,8 @@ cd ../frontend && npm ci && npm run build
 sudo systemctl reload php8.4-fpm        # vide le cache d'opcode
 ```
 
+La migration n'est nécessaire que si la mise à jour en contient une (`doctrine:migrations:status` le dit). Après une mise à jour qui change les outils du serveur MCP, **rechargez le connecteur dans l'IA** (ou retirez-le puis rajoutez-le) : elle garde la liste des outils en mémoire et ne verrait pas les nouveaux.
+
 ## 11. Sauvegardes
 
 La base contient tout. Une sauvegarde quotidienne simple (à adapter, à garder hors du serveur) :
