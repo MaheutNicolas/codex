@@ -247,11 +247,11 @@ Décisions prises :
 
 ### Étape 3 : application Vue (en cours)
 
-**Décisions** : Vue 3 + Vite + Vue Router, en **JavaScript** (pas de TypeScript), **sans Pinia** (l'état partagé tient dans des composables), **sans bibliothèque de composants ni Tailwind** : les styles sont des fichiers SCSS compilés en **un seul fichier CSS**, avec un design épuré, un thème clair et un thème sombre. Tous les textes affichés sont dans un seul fichier de langue.
+**Décisions** : Vue 3 + Vite + Vue Router, en **JavaScript** (pas de TypeScript), **sans Pinia** (l'état partagé tient dans des composables), **sans bibliothèque de composants ni Tailwind** : les styles sont des fichiers SCSS compilés en **un seul fichier CSS**, avec un design épuré, un thème clair et un thème sombre. Tous les textes affichés sont dans un fichier par langue (français et anglais).
 
-**Fait** : projet et outillage, client d'API, connexion (avec redirection vers la page demandée, session qui survit au rechargement), liste des livres (créer, renommer, supprimer avec confirmation), coque de l'application (barre latérale, tiroir sur mobile), menu d'apparence (mode et couleur), notifications, **bibliothèque** (voir ci-dessous), **chronologie** (voir plus bas). **clé d'API** (une seule par livre, toujours affichée, avec copie et régénération après confirmation).
+**Fait** : projet et outillage, client d'API, connexion (avec redirection vers la page demandée, session qui survit au rechargement), liste des livres (créer, renommer, supprimer avec confirmation), coque de l'application (barre latérale, tiroir sur mobile), menu d'apparence (mode et couleur), notifications, **bibliothèque** (voir ci-dessous), **chronologie** (voir plus bas). **clé d'API** (une seule par livre, toujours affichée, avec copie et régénération après confirmation), **import** (voir plus bas).
 
-**Reste** : import et export (avec les deux routes du backend décrites plus bas).
+**Reste** : export (notre format et un format courant).
 
 **Bibliothèque** (`views/LibraryView.vue`, `components/library/KnowledgePanel.vue`) :
 - **Liste** : toutes les fiches du livre (nom, type, alias, résumé), triées par nom, chargées d'un coup (par pages de 200 si besoin). La liste de l'API renvoie les alias pour permettre la recherche.
@@ -280,7 +280,7 @@ Vite redirige `/api` et `/health` vers le backend (`vite.config.js`) : l'app et 
 | Dossier | Rôle |
 |---|---|
 | `styles/` | SCSS : `main.scss` (point d'entrée, ordre des imports), `_theme.scss` (**tout le thème**), `_mixins.scss`, `base/`, `layout/`, `components/`, `pages/` |
-| `locales/` | `fr.js` : **tous les textes affichés**, y compris un message par code d'erreur de l'API ; `t('books.title')` les lit |
+| `locales/` | `index.js` (langue active réactive, `t`, `tn`, `setLocale`), `fr.js` et `en.js` : **tous les textes affichés**, y compris un message par code d'erreur de l'API ; `t('books.title')` les lit |
 | `api/` | `client.js` (appels `fetch`, erreurs de l'API transformées en `ApiError`, session expirée gérée) et un fichier par ressource |
 | `composables/` | état partagé sans Pinia : `useAuth`, `useBook`, `useTheme`, `useToast` |
 | `components/ui/` | éléments de base : `UiButton`, `UiField` (champ ou zone de texte), `UiSelect`, `UiTagInput`, `UiDialog` (fenêtre ou panneau latéral ; il ne se ferme jamais seul, il demande à être fermé avec l'événement `dismiss`), `ToastHost` |
@@ -294,29 +294,31 @@ Vite redirige `/api` et `/health` vers le backend (`vite.config.js`) : l'app et 
 
 **Changer l'apparence** : tout est dans `frontend/src/styles/_theme.scss`. Changer `--accent-h` (la teinte, de 0 à 360) change la couleur de toute l'app ; les valeurs `--radius-*` changent les arrondis, `--space-*` la densité, et les deux mixins `palette-light` et `palette-dark` les couleurs de chaque mode. Les cinq couleurs proposées dans le menu « Apparence » (indigo, sarcelle, vert, ambre, rose) sont les blocs `[data-accent]` du même fichier. Le choix est mémorisé dans le navigateur.
 
-**Textes** : français uniquement, dans `locales/fr.js`. Les messages de validation renvoyés par l'API pour un champ sont en anglais (règle du code) : l'interface affiche le message français du code d'erreur (`VALIDATION_FAILED`), pas le détail du champ.
+**Textes et langues** : français et anglais, dans `locales/fr.js` et `locales/en.js`, qui doivent avoir exactement les mêmes clés et les mêmes `{paramètres}`. La langue se choisit dans le menu « Apparence » (FR / EN), est mémorisée dans le navigateur et, à défaut, suit la langue du navigateur (français si c'est du français, sinon anglais). Elle est réactive : tout change sans recharger. Elle règle aussi les dates, le tri alphabétique, les pluriels, l'attribut `lang` de la page et les consignes de l'import pour l'IA (l'IA répond dans cette langue ; le JSON ne change pas). Ajouter une langue : un fichier de messages, son entrée dans `MESSAGES` et sa règle de pluriel dans `tn`. Les messages de validation renvoyés par l'API pour un champ sont en anglais (règle du code) : l'interface affiche le message du code d'erreur (`VALIDATION_FAILED`), pas le détail du champ.
 
 **Vérification** : l'interface a été testée dans un vrai navigateur (Edge sans fenêtre, piloté par script) : connexion échouée puis réussie, création, renommage et suppression de livres, erreurs de formulaire, menu d'apparence, modes clair et sombre, les cinq couleurs, mobile avec tiroir, persistance après rechargement, déconnexion. Ces scripts jetables ne sont pas dans le dépôt.
 
 **Écrans prévus** : bibliothèque (liste filtrable par type, recherche par nom ou alias), fiche en édition, chronologie triée par `worldOrder`, édition d'événement avec sélecteur de participants alimenté par `/index`, clés d'API (création, copie unique, suppression, URL MCP prête à copier), **import en masse**.
 
-**Import en masse** (pour le JSON généré par ChatGPT) :
-1. **Consignes** : un encadré avec un bouton « Copier » donne à coller dans ChatGPT le texte à suivre. Il est généré par le serveur (`GET /api/books/{bookId}/import/instructions`) : rôle demandé, format JSON exact, règles (slugs en minuscules avec tirets, types autorisés, `worldOrder` entier, résumés de 2-3 phrases) et **la liste des slugs déjà présents** pour que l'IA les réutilise sans créer de doublons.
-2. **Coller** le JSON renvoyé par l'IA.
-3. **Vérifier** : `POST /api/books/{bookId}/import?dryRun=true` renvoie un rapport sans rien écrire (à créer, déjà présents, erreurs avec leur chemin, par exemple `knowledge[2].type`).
-4. **Importer** : le même appel sans `dryRun`. L'import est **atomique** : si un élément est invalide, rien n'est écrit. `onExisting=fail|skip|update` choisit le comportement pour les slugs déjà présents (`fail` par défaut).
+**Import** (`views/ImportView.vue`, `components/import/`, `utils/importDocument.js`) : l'IA produit un document JSON, on le colle, on le vérifie et on le corrige dans le navigateur, puis on l'envoie d'un coup. Le maximum se passe dans le navigateur, le serveur reste simple.
+1. **Consignes** : un texte à copier pour l'IA, **généré dans le navigateur** (`import.instructions.text` dans `fr.js`) à partir des fiches et événements déjà présents (identifiants et noms), pour qu'elle les réutilise sans créer de doublons. Il donne le format exact et les règles.
+2. **Coller** la réponse de l'IA. Une clôture ```` ```json ```` autour du document est retirée. Un texte illisible ou un mauvais gabarit (section inconnue, section qui n'est pas une liste…) est signalé en français sous la zone de texte.
+3. **Vérifier** : une page liste chaque élément (fiches, événements, participants) avec son statut (nouveau, mise à jour, déjà présent et ignoré) et ses erreurs, **calculées dans le navigateur** (`validateItem` : champs obligatoires, types, format des identifiants, type de fiche, doublons, références vers une fiche ou un événement du livre ou de l'import). Chaque élément peut être décoché, retiré ou corrigé dans un panneau latéral ; un élément qui existe déjà est décoché par défaut. « Importer » reste désactivé tant qu'un élément coché a une erreur. Revenir au texte après des corrections demande confirmation.
+4. **Importer** : `POST /api/books/{bookId}/import` avec le document final, **atomique** (une transaction : tout ou rien). Un élément dont l'identifiant existe déjà est mis à jour, les autres sont créés ; les liens sont mis à jour (rôle) ou créés. La réponse donne `created` et `updated` par section.
+
+**Rôle du serveur** (`ImportService`) : il ne détaille pas les erreurs de forme. Un corps qui n'est pas du JSON, une section inconnue, une section qui n'est pas une liste ou un élément qui n'est pas un objet donnent `INVALID_JSON`. Si le document est valide mais que l'écriture échoue (champ invalide, identifiant déjà pris, référence introuvable), l'erreur porte la **raison** et `details.path` (par exemple `events[2]`), et rien n'est écrit. L'interface affiche la raison et surligne l'élément. Les écritures réutilisent les services (`KnowledgeService`, `EventService`, `EventParticipantService`) donc les règles de `Validate`. Limite : 1000 éléments par section.
 
 Format du document (les participants peuvent référencer des éléments du document ou déjà en base) :
 
 ```json
 {
-  "knowledge": [{ "id": "aldric", "type": "character", "name": "Aldric", "summary": "...", "description": "...", "aliases": [] }],
-  "events": [{ "id": "evt-0043", "title": "...", "summary": "...", "worldOrder": 43, "chapter": 8 }],
+  "knowledge": [{ "id": "aldric", "type": "character", "name": "Aldric", "summary": "...", "description": null, "aliases": [] }],
+  "events": [{ "id": "evt-0043", "title": "...", "summary": "...", "detail": null, "worldOrder": 43, "worldDate": null, "chapter": 8, "revealed": true, "tags": [] }],
   "participants": [{ "eventId": "evt-0043", "knowledgeId": "aldric", "role": "author" }]
 }
 ```
 
-L'import réutilise les règles de `Validate` ; la taille du document est limitée.
+Les champs facultatifs absents prennent leur valeur par défaut (`null`, `[]`, `revealed: true`) dans l'aperçu. **L'export** (notre format et un format courant) viendra ensuite.
 
 ### Étape 4 : routes pour l'IA
 

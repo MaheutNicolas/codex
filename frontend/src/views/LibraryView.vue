@@ -8,6 +8,7 @@ import * as knowledgeApi from '@/api/knowledge'
 import { KNOWLEDGE_TYPES, typeIcon } from '@/constants'
 import { useToast } from '@/composables/useToast'
 import { errorMessage, t, tn } from '@/locales'
+import { compareNames } from '@/utils/format'
 import { normalize } from '@/utils/text'
 
 const route = useRoute()
@@ -68,7 +69,7 @@ const visible = computed(() => {
   return byType
     .map((entry) => ({ entry, score: rank(entry, search) }))
     .filter(({ score }) => score >= 0)
-    .sort((a, b) => a.score - b.score || a.entry.name.localeCompare(b.entry.name, 'fr'))
+    .sort((a, b) => a.score - b.score || compareNames(a.entry.name, b.entry.name))
     .map(({ entry }) => entry)
 })
 
@@ -102,7 +103,7 @@ function onSaved(entry) {
   const index = entries.value.findIndex((existing) => existing.id === row.id)
   if (index >= 0) entries.value[index] = row
   else entries.value.push(row)
-  entries.value.sort((a, b) => a.name.localeCompare(b.name, 'fr'))
+  entries.value.sort((a, b) => compareNames(a.name, b.name))
 }
 
 function onDeleted(id) {

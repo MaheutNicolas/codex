@@ -23,6 +23,7 @@ const router = createRouter({
             { path: '', redirect: (to) => ({ name: 'library', params: to.params }) },
             { path: 'library', name: 'library', component: () => import('@/views/LibraryView.vue') },
             { path: 'timeline', name: 'timeline', component: () => import('@/views/TimelineView.vue') },
+            { path: 'import', name: 'import', component: () => import('@/views/ImportView.vue') },
             { path: 'keys', name: 'keys', component: () => import('@/views/KeysView.vue') },
           ],
         },

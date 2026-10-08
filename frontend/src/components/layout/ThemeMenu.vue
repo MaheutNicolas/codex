@@ -2,7 +2,7 @@
 import { onBeforeUnmount, onMounted, ref } from 'vue'
 import { Check, Monitor, Moon, Palette, Sun } from '@lucide/vue'
 import { ACCENTS, MODES, useTheme } from '@/composables/useTheme'
-import { t } from '@/locales'
+import { LOCALES, locale, setLocale, t } from '@/locales'
 
 const { state, setMode, setAccent } = useTheme()
 
@@ -46,6 +46,23 @@ onBeforeUnmount(() => {
             @click="setMode(mode)"
           >
             <component :is="modeIcons[mode]" aria-hidden="true" />
+          </button>
+        </div>
+      </div>
+
+      <div class="c-menu__group">
+        <p class="c-menu__title">{{ t('theme.language') }}</p>
+        <div class="c-menu__segmented">
+          <button
+            v-for="code in LOCALES"
+            :key="code"
+            type="button"
+            class="c-menu__segment c-menu__segment--text"
+            :lang="code"
+            :aria-pressed="locale === code"
+            @click="setLocale(code)"
+          >
+            {{ code.toUpperCase() }}
           </button>
         </div>
       </div>

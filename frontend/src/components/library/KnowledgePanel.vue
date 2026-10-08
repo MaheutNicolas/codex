@@ -26,7 +26,7 @@ const emit = defineEmits(['close', 'saved', 'deleted'])
 const toast = useToast()
 
 const isCreate = computed(() => props.entryId === null)
-const typeOptions = KNOWLEDGE_TYPES.map(({ value }) => ({ value, label: t(`library.types.${value}`) }))
+const typeOptions = computed(() => KNOWLEDGE_TYPES.map(({ value }) => ({ value, label: t(`library.types.${value}`) })))
 
 const form = reactive(blank())
 const errors = reactive({})

@@ -20,7 +20,8 @@ export default {
     books: 'Mes livres',
     library: 'Bibliothèque',
     timeline: 'Chronologie',
-    keys: "Clés d'API",
+    keys: "Clé d'API",
+    import: 'Import',
     logout: 'Se déconnecter',
     openMenu: 'Ouvrir le menu',
     closeMenu: 'Fermer le menu',
@@ -220,10 +221,126 @@ export default {
       "La clé actuelle cessera de fonctionner immédiatement : tout outil qui l'utilise (une IA, un script) perdra l'accès tant que vous ne lui aurez pas donné la nouvelle clé.",
   },
 
+  import: {
+    title: 'Import',
+    subtitle: "Faites remplir la bibliothèque et la chronologie par une IA, vérifiez le résultat, puis enregistrez-le.",
+    step1: {
+      title: "1. Donner les consignes à l'IA",
+      text: "Copiez ce texte dans votre IA, avec le passage de votre histoire à analyser. Il contient le format attendu et la liste de ce que le livre contient déjà.",
+    },
+    step2: {
+      title: '2. Coller sa réponse',
+      text: "Collez ici le document JSON renvoyé par l'IA. Rien n'est enregistré avant l'étape de vérification.",
+      label: "Réponse de l'IA",
+      placeholder: '{ "knowledge": [], "events": [], "participants": [] }',
+      analyse: 'Vérifier',
+    },
+    instructions: {
+      none: '(aucun pour l’instant)',
+      orderOf: 'ordre {number}',
+      copied: 'Consignes copiées.',
+      text: `Tu m'aides à remplir la bibliothèque d'un livre. À partir du texte que je te donnerai, extrais les personnages, lieux, systèmes et événements, puis réponds UNIQUEMENT avec un document JSON (aucun texte autour), exactement dans ce format :
+
+{
+  "knowledge": [
+    { "id": "aldric", "type": "character", "name": "Aldric", "summary": "2 à 3 phrases.", "description": "Version longue, ou null.", "aliases": ["le Borgne"] }
+  ],
+  "events": [
+    { "id": "evt-0043", "title": "Le serment", "summary": "2 à 3 phrases.", "detail": null, "worldOrder": 43, "worldDate": "An 312, hiver", "chapter": 8, "revealed": true, "tags": [] }
+  ],
+  "participants": [
+    { "eventId": "evt-0043", "knowledgeId": "aldric", "role": "author" }
+  ]
+}
+
+Règles :
+- "id" : lettres minuscules sans accent, chiffres et tirets uniquement (ex. citadelle-nord). Il est unique.
+- "type" d'une fiche : un parmi {types}.
+- "summary" : 2 à 3 phrases, c'est ce que l'IA lit en premier. "description" et "detail" : la version longue, ou null.
+- "worldOrder" : nombre entier qui donne l'ordre des événements dans le monde de l'histoire (le plus petit arrive en premier). Le prochain ordre libre est {nextOrder}.
+- "chapter" : numéro du chapitre où le lecteur découvre l'événement (entier, 1 ou plus), ou null s'il n'est pas raconté.
+- "revealed" : false si le lecteur ne sait pas encore ce qui s'est passé.
+- "participants" relie un événement à une fiche ("eventId" et "knowledgeId" sont des "id"), avec un "role" court (author, victim, witness, place…) ou null.
+- Utilise null quand une information est inconnue. N'invente rien.
+- Ces éléments existent déjà : ne les renvoie pas, sauf pour les corriger avec le même "id". Tu peux t'y référer dans "participants".
+
+Fiches déjà présentes :
+{knowledge}
+
+Événements déjà présents :
+{events}`,
+    },
+    parse: {
+      invalidJson: "Ce texte n'est pas du JSON valide ({reason}). Copiez bien toute la réponse de l'IA.",
+      notObject: 'Le document doit être un objet JSON avec les sections « knowledge », « events » et « participants ».',
+      unknownSection: 'Section inconnue : « {section} ». Les sections possibles sont « knowledge », « events » et « participants ».',
+      notList: 'La section « {section} » doit être une liste.',
+      tooMany: 'La section « {section} » contient trop d’éléments (maximum {max}).',
+      notItem: 'L’élément {number} de « {section} » doit être un objet.',
+      empty: 'Le document ne contient aucun élément.',
+    },
+    sections: { knowledge: 'Fiches', events: 'Événements', participants: 'Participants' },
+    status: {
+      new: 'Nouveau',
+      update: 'Mise à jour',
+      existsIgnored: 'Existe déjà · ignoré',
+      ignored: 'Ignoré',
+    },
+    review: {
+      back: 'Modifier le texte',
+      backTitle: 'Revenir au texte ?',
+      backText: 'Les corrections faites dans cette vérification seront perdues.',
+      summary: '{created} à créer, {updated} à mettre à jour, {links} liens, {ignored} ignorés.',
+      errors: 'À corriger : {count}.',
+      submit: 'Importer',
+      help: "Décochez ce que vous ne voulez pas importer, modifiez ce qui doit l'être. Un élément qui existe déjà est ignoré par défaut : cochez-le pour le mettre à jour.",
+      include: 'Importer {title}',
+      edit: 'Modifier {title}',
+      remove: 'Retirer {title}',
+      roleIs: 'Rôle : {role}',
+    },
+    edit: {
+      title: "Corriger l'élément",
+      apply: 'Appliquer',
+      eventId: "Identifiant de l'événement",
+      eventIdHint: "Un événement du livre ou de cet import.",
+      knowledgeId: 'Identifiant de la fiche',
+      knowledgeIdHint: 'Une fiche du livre ou de cet import.',
+    },
+    errors: {
+      required: 'Obligatoire.',
+      string: 'Doit être un texte.',
+      tooLong: 'Maximum {max} caractères.',
+      slug: 'Lettres minuscules, chiffres et tirets uniquement (ex. citadelle-nord).',
+      knowledgeType: 'Type inconnu. Types possibles : {types}.',
+      integer: 'Doit être un nombre entier.',
+      chapter: 'Doit être un numéro de chapitre (1 ou plus), ou vide.',
+      boolean: 'Doit valoir true ou false.',
+      list: 'Doit être une liste de textes.',
+      unknownField: 'Champ inconnu : il sera retiré si vous corrigez l’élément.',
+      unknownEvent: "Aucun événement avec cet identifiant, ni dans le livre ni dans l'import.",
+      unknownKnowledge: "Aucune fiche avec cet identifiant, ni dans le livre ni dans l'import.",
+      duplicate: 'Cet élément apparaît plusieurs fois dans l’import.',
+    },
+    server: {
+      title: "L'import a été refusé par le serveur.",
+      nothingSaved: "Rien n'a été enregistré : corrigez le problème puis réessayez.",
+      item: '{section} : « {title} »',
+      invalidJson: 'Le serveur a jugé le document invalide.',
+      reference: 'Le champ {field} pointe vers « {id} », qui n’existe pas.',
+    },
+    done: {
+      title: 'Import terminé',
+      text: '{created} élément(s) créé(s), {updated} mis à jour.',
+      again: 'Nouvel import',
+    },
+  },
+
   theme: {
     title: 'Apparence',
     mode: 'Mode',
     accent: 'Couleur',
+    language: 'Langue',
     modes: { system: 'Système', light: 'Clair', dark: 'Sombre' },
     accents: { indigo: 'Indigo', teal: 'Sarcelle', green: 'Vert', amber: 'Ambre', rose: 'Rose' },
   },
