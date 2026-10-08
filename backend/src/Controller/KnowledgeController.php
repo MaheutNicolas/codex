@@ -31,8 +31,18 @@ final class KnowledgeController
     }
 
     #[Route('/{id}', methods: ['GET'])]
-    public function show(Book $book, string $id): JsonResponse
+    public function show(Book $book, string $id, Request $request): JsonResponse
     {
+        // "?events=true" adds the events of the entry, filtered by the point of view of the reader.
+        if ($this->validate->boolQuery($request, 'events')) {
+            return ApiHelper::json($this->service->sheet(
+                $book,
+                $id,
+                $this->validate->viewpoint($request),
+                $this->validate->page($request),
+            ));
+        }
+
         return ApiHelper::json($this->service->get($book, $id));
     }
 

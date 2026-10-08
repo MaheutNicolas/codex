@@ -327,9 +327,27 @@ Les champs facultatifs absents prennent leur valeur par défaut (`null`, `[]`, `
 - **Événements secrets** : une case (cochée par défaut) les retire, ainsi que leurs liens, pour ne pas révéler au lecteur ou à une IA ce qui n'est pas encore connu.
 - Un aperçu du fichier est affiché ; boutons « Télécharger » (fichier `nom-du-livre-date.json` ou `.md`) et « Copier ».
 
-### Étape 4 : routes pour l'IA
+### Étape 4 : routes pour l'IA (terminée)
 
-Filtre de point de vue temporel `beforeChapter` / `atChapter` sur toutes les lectures, masquage de `revealed = false` par défaut (`includeSecrets=true` pour l'auteur), endpoint timeline, fiche d'une connaissance (avec ses événements) en 2-3 requêtes SQL fixes, recherche plein texte sur le contenu (index `FULLTEXT` MySQL). Les requêtes complexes vont dans les repositories.
+Trois lectures pensées pour une IA, accessibles par session ou par la clé du livre (lecture). Les routes CRUD de l'app (`/knowledge`, `/events`…) ne changent pas : l'app est l'auteur et voit tout. Les filtres ci-dessous ne s'appliquent qu'à ces routes.
+
+**Point de vue du lecteur** (paramètres communs à `timeline`, `search` et à la fiche avec `events=true`) :
+
+| Paramètre | Effet |
+|---|---|
+| `atChapter=N` | le lecteur a lu les chapitres 1 à N : seuls les événements racontés jusqu'au chapitre N |
+| `beforeChapter=N` | le lecteur a lu les chapitres 1 à N-1 (on écrit le chapitre N) |
+| `includeSecrets=true` | point de vue de l'auteur : ajoute les événements non révélés (`revealed = false`) et ceux qui ne sont jamais racontés (`chapter` vide) |
+
+Sans `includeSecrets`, seuls les événements `revealed = true` sont visibles. Avec un chapitre donné, un événement raconté plus tard n'est jamais visible, même pour l'auteur ; un événement hors-champ (sans chapitre) n'est visible qu'avec `includeSecrets=true`. `atChapter` et `beforeChapter` ensemble donnent `INVALID_QUERY_PARAMETER`. Les fiches (`knowledge`) n'ont pas de chapitre : elles ne sont pas filtrées, mais leur texte peut en dire plus que le point de vue choisi.
+
+| Route | Rôle |
+|---|---|
+| `GET /api/books/{bookId}/timeline` | événements visibles par ordre du monde (`id`, `title`, `summary`, `worldOrder`, `worldDate`, `chapter`, `revealed`) **avec leurs participants** (`id`, `name`, `role`) ; deux requêtes pour une page. `knowledgeId=` ne garde que les événements d'une fiche ; `limit` / `offset` comme les autres listes |
+| `GET /api/books/{bookId}/knowledge/{id}?events=true` | la fiche complète **et** ses événements visibles (avec le rôle de la fiche), au même format paginé que `timeline`, dans `events` ; sans `events=true`, la fiche seule comme avant |
+| `GET /api/books/{bookId}/search?q=…` | recherche dans les fiches et les événements visibles, meilleurs résultats d'abord ; `limit` (1 à 50, 20 par défaut) |
+
+**Recherche** : index `FULLTEXT` MySQL (fiches : nom, résumé, description ; événements : titre, résumé, détail) en mode booléen, avec un début de mot accepté (`cita` trouve `citadelle`), plus une comparaison simple sur le nom, l'identifiant, les alias et les étiquettes, mot par mot, pour trouver un surnom ou un mot court. Les mots de moins de 3 lettres ne comptent que s'ils sont seuls. Un résultat dont le nom, l'identifiant, un alias ou une étiquette contient des mots de la recherche passe avant un résultat trouvé seulement dans les textes. Le texte est découpé en mots (lettres et chiffres) : les opérateurs de recherche ne sont pas interprétés. Réponse : `{ data: [{ kind: "knowledge" | "event", id, name, summary, score, … }], total }`.
 
 ### Étape 5 : serveur MCP distant
 

@@ -30,6 +30,30 @@ class EventParticipantRepository extends ServiceEntityRepository
     }
 
     /**
+     * The participants of several events of a book (identifier, name, role), in one query.
+     *
+     * @param list<string> $eventSlugs
+     *
+     * @return list<array{eventId: string, id: string, name: string, role: string|null}>
+     */
+    public function participantsOf(Book $book, array $eventSlugs): array
+    {
+        if ([] === $eventSlugs) {
+            return [];
+        }
+
+        return $this->createQueryBuilder('p')
+            ->select('e.slug AS eventId', 'k.slug AS id', 'k.name', 'p.role')
+            ->join('p.event', 'e')
+            ->join('p.knowledge', 'k')
+            ->andWhere('e.book = :book')->setParameter('book', $book)
+            ->andWhere('e.slug IN (:slugs)')->setParameter('slugs', $eventSlugs)
+            ->orderBy('k.name')
+            ->getQuery()
+            ->getArrayResult();
+    }
+
+    /**
      * List query: reads the slugs through two joins, no entity hydration (see ApiHelper::paginate).
      * An event and its participants always belong to the same book, so filtering on the event is enough.
      */

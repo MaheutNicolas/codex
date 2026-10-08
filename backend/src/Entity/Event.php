@@ -16,6 +16,7 @@ use Symfony\Component\Validator\Constraints as Assert;
 #[ORM\UniqueConstraint(name: 'uniq_event_book_slug', columns: ['book_id', 'slug'])]
 #[ORM\Index(name: 'idx_event_book_chapter_world_order', columns: ['book_id', 'chapter', 'world_order'])]
 #[ORM\Index(name: 'idx_event_book_world_order', columns: ['book_id', 'world_order'])]
+#[ORM\Index(name: 'ft_event_search', columns: ['title', 'summary', 'detail'], flags: ['fulltext'])]
 #[ORM\HasLifecycleCallbacks]
 class Event
 {

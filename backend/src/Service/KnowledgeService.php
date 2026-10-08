@@ -3,6 +3,7 @@
 namespace App\Service;
 
 use App\Api\Page;
+use App\Api\Viewpoint;
 use App\Entity\Book;
 use App\Entity\Knowledge;
 use App\Error\ApiException;
@@ -21,6 +22,7 @@ final class KnowledgeService
         private readonly Validate $validate,
         private readonly Hydrator $hydrator,
         private readonly Paginator $paginator,
+        private readonly TimelineService $timeline,
     ) {
     }
 
@@ -40,6 +42,18 @@ final class KnowledgeService
     public function get(Book $book, string $slug): array
     {
         return $this->serialize($this->find($book, $slug));
+    }
+
+    /**
+     * An entry with the events it takes part in (those the reader may see), as an AI reads it in one call.
+     *
+     * @return array<string, mixed>
+     */
+    public function sheet(Book $book, string $slug, Viewpoint $viewpoint, Page $page): array
+    {
+        $entry = $this->get($book, $slug);
+
+        return $entry + ['events' => $this->timeline->timeline($book, $viewpoint, $entry['id'], $page)];
     }
 
     /**

@@ -72,4 +72,29 @@ class KnowledgeRepository extends ServiceEntityRepository
             ->getQuery()
             ->getArrayResult();
     }
+
+    /**
+     * Full-text search in the entries of a book (name, summary, description), plus a plain match on the
+     * name, identifier and aliases so that short words and nicknames are found. Best matches first.
+     *
+     * @param string       $match the full-text query (boolean mode)
+     * @param list<string> $likes LIKE patterns, one per word
+     *
+     * @return list<array<string, mixed>>
+     */
+    public function search(Book $book, string $match, array $likes, int $limit): array
+    {
+        $any = SearchSql::likeAny(['name', 'slug', 'aliases'], \count($likes));
+        $named = SearchSql::likeCount(['name', 'slug', 'aliases'], \count($likes));
+        $sql = 'SELECT slug AS id, name, type, summary, '
+            .'MATCH(name, summary, description) AGAINST (:match IN BOOLEAN MODE) AS score, '
+            .$named.' AS named '
+            .'FROM knowledge WHERE book_id = :book AND (MATCH(name, summary, description) AGAINST (:match IN BOOLEAN MODE) OR '.$any.') '
+            .'ORDER BY named DESC, score DESC, name LIMIT '.$limit;
+
+        return $this->getEntityManager()->getConnection()->fetchAllAssociative(
+            $sql,
+            ['book' => $book->getId(), 'match' => $match] + SearchSql::likeParams($likes),
+        );
+    }
 }

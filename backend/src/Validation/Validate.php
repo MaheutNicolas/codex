@@ -3,6 +3,7 @@
 namespace App\Validation;
 
 use App\Api\Page;
+use App\Api\Viewpoint;
 use App\Error\ApiException;
 use App\Error\ErrorCode;
 use Symfony\Component\HttpFoundation\Request;
@@ -111,6 +112,40 @@ final class Validate
             $this->intQuery($request, 'limit', 1, Page::MAX_LIMIT) ?? Page::DEFAULT_LIMIT,
             $this->intQuery($request, 'offset', 0) ?? 0,
         );
+    }
+
+    /**
+     * The point of view of a read: "atChapter=N" (chapters 1 to N read) or "beforeChapter=N" (chapters 1 to N-1 read),
+     * and "includeSecrets=true" for the author. Without any of them, only revealed events are shown.
+     */
+    public function viewpoint(Request $request): Viewpoint
+    {
+        $before = $this->intQuery($request, 'beforeChapter', 1, 2147483647);
+        $at = $this->intQuery($request, 'atChapter', 1, 2147483647);
+        if (null !== $before && null !== $at) {
+            throw $this->invalidQuery('beforeChapter', 'only one of beforeChapter and atChapter');
+        }
+
+        return new Viewpoint(
+            $at ?? (null === $before ? null : $before - 1),
+            $this->boolQuery($request, 'includeSecrets') ?? false,
+        );
+    }
+
+    /**
+     * The words of a search text, without anything that has a meaning for the full-text engine.
+     *
+     * @return list<string>
+     */
+    public function searchTerms(Request $request, string $name): array
+    {
+        $text = $this->stringQuery($request, $name) ?? throw $this->invalidQuery($name, 'a non-empty string');
+        $terms = preg_split('/[^\p{L}\p{N}]+/u', $text, -1, \PREG_SPLIT_NO_EMPTY);
+        if (false === $terms || [] === $terms) {
+            throw $this->invalidQuery($name, 'at least one word');
+        }
+
+        return array_slice($terms, 0, 10);
     }
 
     public function stringQuery(Request $request, string $name): ?string

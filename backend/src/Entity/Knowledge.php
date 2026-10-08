@@ -15,6 +15,7 @@ use Symfony\Component\Validator\Constraints as Assert;
 #[ORM\Table(name: 'knowledge')]
 #[ORM\UniqueConstraint(name: 'uniq_knowledge_book_slug', columns: ['book_id', 'slug'])]
 #[ORM\Index(name: 'idx_knowledge_book_type', columns: ['book_id', 'type'])]
+#[ORM\Index(name: 'ft_knowledge_search', columns: ['name', 'summary', 'description'], flags: ['fulltext'])]
 #[ORM\HasLifecycleCallbacks]
 class Knowledge
 {
