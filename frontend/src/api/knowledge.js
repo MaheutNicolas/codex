@@ -21,3 +21,6 @@ export const get = (bookId, id) => api.get(`/api/books/${bookId}/knowledge/${enc
 export const create = (bookId, data) => api.post(`/api/books/${bookId}/knowledge`, data)
 export const update = (bookId, id, data) => api.patch(`/api/books/${bookId}/knowledge/${encodeURIComponent(id)}`, data)
 export const remove = (bookId, id) => api.delete(`/api/books/${bookId}/knowledge/${encodeURIComponent(id)}`)
+
+/** The light lexicon of a book (id, name, type, aliases), used to pick entries without loading their texts. */
+export const lexicon = (bookId) => api.get(`/api/books/${bookId}/index`).then((page) => page.data)

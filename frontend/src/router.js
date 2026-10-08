@@ -2,8 +2,6 @@ import { createRouter, createWebHistory } from 'vue-router'
 import { setUnauthorizedHandler } from '@/api/client'
 import { useAuth } from '@/composables/useAuth'
 
-const placeholder = () => import('@/views/PlaceholderView.vue')
-
 const router = createRouter({
   history: createWebHistory(),
   routes: [
@@ -24,8 +22,8 @@ const router = createRouter({
           children: [
             { path: '', redirect: (to) => ({ name: 'library', params: to.params }) },
             { path: 'library', name: 'library', component: () => import('@/views/LibraryView.vue') },
-            { path: 'timeline', name: 'timeline', component: placeholder, meta: { title: 'nav.timeline' } },
-            { path: 'keys', name: 'keys', component: placeholder, meta: { title: 'nav.keys' } },
+            { path: 'timeline', name: 'timeline', component: () => import('@/views/TimelineView.vue') },
+            { path: 'keys', name: 'keys', component: () => import('@/views/KeysView.vue') },
           ],
         },
       ],

@@ -74,15 +74,13 @@ Les connaissances et les événements ont une **clé technique** entière (jamai
 Supprimer un compte supprime ses livres ; supprimer un livre supprime tout son contenu et ses clés d'API (cascade en base).
 
 ### ApiKey (`api_key`)
-Donne à une IA ou à un script l'accès à **un** livre.
+Donne à une IA ou à un script l'accès à un livre. **Un livre a exactement une clé** (index unique sur `book_id`), créée à la première demande.
 | Champ | Type | Notes |
 |---|---|---|
 | id | int (PK) | |
 | user | ManyToOne User | onDelete CASCADE |
 | book | ManyToOne Book | onDelete CASCADE |
-| name | string | libellé libre : « ChatGPT », « Claude »… |
-| tokenHash | string | SHA-256 du jeton, unique ; le jeton n'est jamais stocké |
-| prefix | string | début du jeton (`cdx_` + 8 caractères), pour reconnaître la clé dans une liste |
+| token | string | jeton `cdx_` + 40 caractères hexadécimaux, unique, **stocké tel quel** et toujours affiché à son propriétaire (les données ne sont pas sensibles : si la base fuit, les données fuitent de toute façon) |
 | scope | string | `read` ou `write` |
 | createdAt | datetime_immutable | |
 | lastUsedAt | datetime_immutable, nullable | rafraîchi au plus toutes les 5 minutes |
@@ -191,7 +189,6 @@ Préfixe `/api`, JSON uniquement. `{bookId}` est l'identifiant numérique du liv
 | `KNOWLEDGE_NOT_FOUND` | 404 | identifiant de connaissance inconnu |
 | `EVENT_NOT_FOUND` | 404 | identifiant d'événement inconnu |
 | `PARTICIPANT_NOT_FOUND` | 404 | lien événement ↔ connaissance inexistant |
-| `API_KEY_NOT_FOUND` | 404 | clé d'API inconnue ou qui appartient à un autre compte |
 | `METHOD_NOT_ALLOWED` | 405 | méthode refusée sur cette route (header `Allow`) |
 | `ID_ALREADY_EXISTS` | 409 | identifiant ou lien déjà pris |
 | `REFERENCE_NOT_FOUND` | 409 | un champ pointe vers une ressource inexistante |
@@ -227,13 +224,13 @@ Décisions prises :
 | Livres | `GET` et `POST /api/books`, `PATCH` et `DELETE /api/books/{bookId}` | session uniquement |
 | Livre | `GET /api/books/{bookId}` | session, ou clé de ce livre |
 | Contenu | `/api/books/{bookId}/knowledge`, `/events`, `/event-participants`, `/index` | session, ou clé de ce livre (écriture : clé `write`) |
-| Clés | `GET` et `POST /api/books/{bookId}/api-keys`, `DELETE /api/api-keys/{id}` | session uniquement |
+| Clé | `GET /api/books/{bookId}/api-key` (la crée si besoin), `POST /api/books/{bookId}/api-key/regenerate` | session uniquement |
 
 **Deux façons de s'authentifier**, sur deux pare-feux Symfony (`config/packages/security.yaml`) :
 - **Session** (app Vue) : `POST /api/auth/login` avec `{"username", "password"}`. Le serveur pose un cookie de session et un cookie « remember me » d'**un an** (`HttpOnly`, `SameSite=Lax`, `Secure` en HTTPS) : même si la session PHP expire, le cookie rétablit la connexion. Après 5 échecs en 15 minutes, la connexion est bloquée (`TOO_MANY_ATTEMPTS`, `Retry-After`), même avec le bon mot de passe.
 - **Clé d'API** (IA, scripts) : header `X-API-Key`. Ces requêtes passent par un pare-feu **sans état** (`ApiKeyRequestMatcher`) : aucune session, aucun cookie. Une clé invalide donne `UNAUTHORIZED`, sans retomber sur une éventuelle session.
 
-**Clés d'API** : une clé est liée à **un livre** et à un `scope` (`read` ou `write`) ; l'IA n'a jamais à choisir de livre, et une clé qui fuit n'expose qu'un livre. Format `cdx_` + 40 caractères hexadécimaux, **affichée une seule fois** à la création (champ `token` de la réponse) ; seul son hash SHA-256 est stocké, la liste ne montre que le préfixe. `DELETE /api/api-keys/{id}` la supprime immédiatement ; la supprimer avec son livre ou son compte est automatique.
+**Clé d'API** : chaque livre a une seule clé, de portée `read` à la création (l'écriture passe par l'app et, plus tard, l'import). L'IA n'a jamais à choisir de livre, et une clé qui fuit n'expose qu'un livre. Le jeton est visible à tout moment par le propriétaire (`GET .../api-key`). `POST .../api-key/regenerate` le remplace : l'ancien cesse de fonctionner immédiatement, ce qui sert si l'on pense qu'un tiers y a eu accès. La clé disparaît avec son livre ou son compte.
 
 **Droits**, appliqués à un seul endroit (`BookResolver`) :
 - une session accède aux livres de son compte ;
@@ -252,9 +249,9 @@ Décisions prises :
 
 **Décisions** : Vue 3 + Vite + Vue Router, en **JavaScript** (pas de TypeScript), **sans Pinia** (l'état partagé tient dans des composables), **sans bibliothèque de composants ni Tailwind** : les styles sont des fichiers SCSS compilés en **un seul fichier CSS**, avec un design épuré, un thème clair et un thème sombre. Tous les textes affichés sont dans un seul fichier de langue.
 
-**Fait** : projet et outillage, client d'API, connexion (avec redirection vers la page demandée, session qui survit au rechargement), liste des livres (créer, renommer, supprimer avec confirmation), coque de l'application (barre latérale, tiroir sur mobile), menu d'apparence (mode et couleur), notifications, **bibliothèque** (voir ci-dessous). Les sections Chronologie et Clés d'API affichent pour l'instant une page « Bientôt disponible ».
+**Fait** : projet et outillage, client d'API, connexion (avec redirection vers la page demandée, session qui survit au rechargement), liste des livres (créer, renommer, supprimer avec confirmation), coque de l'application (barre latérale, tiroir sur mobile), menu d'apparence (mode et couleur), notifications, **bibliothèque** (voir ci-dessous), **chronologie** (voir plus bas). **clé d'API** (une seule par livre, toujours affichée, avec copie et régénération après confirmation).
 
-**Reste** : chronologie (événements, participants, sélecteur alimenté par l'index), clés d'API (création, copie unique, suppression, URL MCP), import en masse (avec les deux routes du backend décrites plus bas).
+**Reste** : import et export (avec les deux routes du backend décrites plus bas).
 
 **Bibliothèque** (`views/LibraryView.vue`, `components/library/KnowledgePanel.vue`) :
 - **Liste** : toutes les fiches du livre (nom, type, alias, résumé), triées par nom, chargées d'un coup (par pages de 200 si besoin). La liste de l'API renvoie les alias pour permettre la recherche.
@@ -264,6 +261,13 @@ Décisions prises :
 - **Identifiant** : à la création il se déduit du nom (« Citadelle du Nord » donne `citadelle-du-nord`) tant qu'on ne l'a pas modifié à la main ; il est en lecture seule ensuite. « Enregistrer et créer une autre » enchaîne les saisies sans fermer le panneau.
 - **Validation** en français dans le navigateur (champs obligatoires, format de l'identifiant) ; erreur effacée dès que le champ est modifié ; identifiant déjà pris signalé sous le champ.
 - **Rien n'est perdu sans prévenir** : fermer le panneau avec des modifications non enregistrées (Échap, clic à côté, croix, Annuler) demande confirmation ; la suppression aussi. Dans les confirmations, le bouton le moins destructeur a le focus.
+
+**Chronologie** (`views/TimelineView.vue`, `components/timeline/EventPanel.vue`) :
+- **Liste plate** triée par `worldOrder`, chargée d'un coup : ordre, titre, date du monde, chapitre (ou « Hors-champ »), badge « Secret » si l'événement n'est pas révélé, résumé. Un chapitre peut contenir un ou plusieurs événements.
+- **Recherche** sans accents ni casse (titre, résumé, identifiant, date), filtre révélés / secrets et filtre par chapitre (les chapitres présents, plus « Hors-champ »). Les touches `/` et `Ctrl+K` placent le curseur dans la recherche.
+- **Réordonner** : des boutons monter / descendre, visibles quand aucun filtre n'est actif. Déplacer un événement échange son `worldOrder` avec celui de son voisin (deux requêtes) ; si les deux sont égaux, les ordres qui cessent de croître sont réécrits. Pour insérer entre deux événements, on peut aussi modifier le nombre à la main.
+- **Panneau latéral** piloté par l'adresse (`?event=evt-0042`, `?new`), comme la bibliothèque. À la création, l'identifiant (`evt-NNNN` suivant) et l'ordre (dernier + 1) sont pré-remplis.
+- **Participants** : chargés à l'ouverture du panneau seulement (`event-participants?eventId=`), pas dans la liste. Le sélecteur est alimenté par `GET /index`. Les ajouts, retraits et changements de rôle sont envoyés à l'enregistrement, après l'événement.
 
 **Lancer en développement** (deux terminaux) :
 - `cd backend` puis `symfony serve` (ou `php -S 127.0.0.1:8000 -t public`) ;

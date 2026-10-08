@@ -38,7 +38,7 @@ final class ApiKeyAuthenticator extends AbstractAuthenticator
     public function authenticate(Request $request): Passport
     {
         $token = trim((string) $request->headers->get('X-API-Key'));
-        $key = '' === $token ? null : $this->keys->findByTokenHash(ApiKeyService::hashToken($token));
+        $key = '' === $token ? null : $this->keys->findByToken($token);
         if (null === $key) {
             throw new BadCredentialsException('Unknown API key.');
         }

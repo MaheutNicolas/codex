@@ -1,0 +1,28 @@
+// A checkbox with its label and an optional hint underneath.
+.c-check {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  cursor: pointer;
+
+  &__input {
+    flex: none;
+    width: 1.125rem;
+    height: 1.125rem;
+    margin-top: 0.125rem;
+    accent-color: var(--accent);
+  }
+
+  &__text {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+    font-weight: var(--weight-medium);
+  }
+
+  &__hint {
+    color: var(--text-faint);
+    font-size: var(--text-xs);
+    font-weight: var(--weight-regular);
+  }
+}

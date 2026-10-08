@@ -16,9 +16,9 @@ class ApiKeyRepository extends ServiceEntityRepository
         parent::__construct($registry, ApiKey::class);
     }
 
-    public function findByTokenHash(string $tokenHash): ?ApiKey
+    public function findByToken(string $token): ?ApiKey
     {
-        return $this->findOneBy(['tokenHash' => $tokenHash]);
+        return $this->findOneBy(['token' => $token]);
     }
 
     /** @return list<ApiKey> */

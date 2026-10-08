@@ -1,0 +1,176 @@
+@use '../mixins';
+
+.timeline {
+  // The chapter filter sits at the end of the toolbar.
+  &__chapter {
+    min-width: 12rem;
+  }
+
+  &__list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+
+  // One event: the row is a button that opens the edit panel, the move buttons sit beside it.
+  &__item {
+    display: flex;
+    align-items: stretch;
+    gap: var(--space-2);
+  }
+
+  &__row {
+    display: flex;
+    flex: 1;
+    align-items: flex-start;
+    gap: var(--space-4);
+    min-width: 0;
+    padding: var(--space-4);
+    text-align: left;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    transition:
+      border-color var(--duration) var(--ease),
+      box-shadow var(--duration) var(--ease);
+
+    &:hover {
+      border-color: var(--border-strong);
+      box-shadow: var(--shadow-sm);
+    }
+
+    &.is-active {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 1px var(--accent);
+    }
+  }
+
+  // The world order, in the place where the icon is in the library.
+  &__order {
+    display: grid;
+    flex: none;
+    place-items: center;
+    min-width: 2.5rem;
+    height: 2.5rem;
+    padding: 0 var(--space-2);
+    color: var(--accent-soft-text);
+    font-size: var(--text-sm);
+    font-variant-numeric: tabular-nums;
+    font-weight: var(--weight-semibold);
+    background: var(--accent-soft);
+    border-radius: var(--radius-md);
+  }
+
+  &__body {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: var(--space-1);
+    min-width: 0;
+  }
+
+  &__title-line {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2);
+  }
+
+  &__title {
+    font-weight: var(--weight-semibold);
+    overflow-wrap: anywhere;
+  }
+
+  &__date {
+    color: var(--text-faint);
+    font-size: var(--text-xs);
+  }
+
+  // Two lines at most: the full text is in the panel.
+  &__summary {
+    display: -webkit-box;
+    overflow: hidden;
+    color: var(--text-muted);
+    font-size: var(--text-sm);
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+  }
+
+  &__move {
+    display: flex;
+    flex: none;
+    flex-direction: column;
+    justify-content: center;
+  }
+}
+
+// The form of the edit panel.
+.event-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+
+  &__row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-4);
+
+    @include mixins.narrow {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+
+  &__participants {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+  }
+
+  &__section-title {
+    font-size: var(--text-lg);
+  }
+}
+
+// The knowledge entries linked to the event being edited.
+.participants {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+
+  &__row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+  }
+
+  &__icon {
+    flex: none;
+    width: 1rem;
+    height: 1rem;
+    color: var(--text-faint);
+  }
+
+  &__name {
+    flex: 1;
+    min-width: 0;
+    font-weight: var(--weight-medium);
+    overflow-wrap: anywhere;
+  }
+
+  &__role {
+    flex: none;
+    width: 9rem;
+  }
+
+  // Choose an entry, give its role, add it.
+  &__add {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+    align-items: end;
+    gap: var(--space-3);
+
+    @include mixins.narrow {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+}

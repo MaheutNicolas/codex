@@ -8,39 +8,29 @@ use App\Entity\User;
 use App\Security\SessionOnly;
 use App\Service\ApiKeyService;
 use Symfony\Component\HttpFoundation\JsonResponse;
-use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\CurrentUser;
 
-/** Managing API keys is reserved to a logged-in session: a key can never create or delete keys. */
+/** Reading or regenerating the key of a book is reserved to a logged-in session: a key can never reveal or replace itself. */
 #[SessionOnly]
+#[Route('/api/books/{bookId}/api-key', requirements: ['bookId' => '\d+'])]
 final class ApiKeyController
 {
-    public function __construct(
-        private readonly ApiKeyService $service,
-        private readonly ApiHelper $api,
-    ) {
+    public function __construct(private readonly ApiKeyService $service)
+    {
     }
 
-    #[Route('/api/books/{bookId}/api-keys', requirements: ['bookId' => '\d+'], methods: ['GET'])]
-    public function index(Book $book): JsonResponse
+    /** The key of the book, with its token. It is created the first time it is asked for. */
+    #[Route('', methods: ['GET'])]
+    public function show(Book $book, #[CurrentUser] User $user): JsonResponse
     {
-        return ApiHelper::json($this->service->list($book));
+        return ApiHelper::json($this->service->get($user, $book));
     }
 
-    /** The response carries the token: it is shown this once and cannot be retrieved afterwards. */
-    #[Route('/api/books/{bookId}/api-keys', requirements: ['bookId' => '\d+'], methods: ['POST'])]
-    public function create(Book $book, #[CurrentUser] User $user, Request $request): JsonResponse
+    /** Gives the key a new token; the previous one stops working immediately. */
+    #[Route('/regenerate', methods: ['POST'])]
+    public function regenerate(Book $book, #[CurrentUser] User $user): JsonResponse
     {
-        return ApiHelper::json($this->service->create($user, $book, $this->api->body($request)), 201);
-    }
-
-    #[Route('/api/api-keys/{id}', requirements: ['id' => '\d+'], methods: ['DELETE'])]
-    public function delete(int $id, #[CurrentUser] User $user): Response
-    {
-        $this->service->delete($user, $id);
-
-        return new Response(null, 204);
+        return ApiHelper::json($this->service->regenerate($user, $book));
     }
 }

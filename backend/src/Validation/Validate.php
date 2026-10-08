@@ -65,12 +65,6 @@ final class Validate
         $this->fields($data, ['name' => 'string']);
     }
 
-    /** @param array<string, mixed> $data */
-    public function apiKey(array $data): void
-    {
-        $this->fields($data, ['name' => 'string', 'scope' => 'string']);
-    }
-
     /** Creating a link needs both identifiers; updating one can only change its role. */
     public function participant(array $data, bool $creating): void
     {

@@ -8,12 +8,14 @@ use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Validator\Constraints as Assert;
 
 /**
- * Gives an AI client or a script access to one book. Only the SHA-256 hash of the token is stored:
- * the token itself is shown once, when the key is created.
+ * The key of a book: it gives an AI client or a script access to that book, and a book has exactly one.
+ * The token is stored as is and always shown to the owner (the data is not sensitive). Regenerating it
+ * replaces the old token, which stops working immediately.
  */
 #[ORM\Entity(repositoryClass: ApiKeyRepository::class)]
 #[ORM\Table(name: 'api_key')]
-#[ORM\UniqueConstraint(name: 'uniq_api_key_token_hash', columns: ['token_hash'])]
+#[ORM\UniqueConstraint(name: 'uniq_api_key_token', columns: ['token'])]
+#[ORM\UniqueConstraint(name: 'uniq_api_key_book', columns: ['book_id'])]
 class ApiKey
 {
     public const SCOPE_READ = 'read';
@@ -33,17 +35,8 @@ class ApiKey
     #[ORM\JoinColumn(nullable: false, onDelete: 'CASCADE')]
     private ?Book $book = null;
 
-    #[ORM\Column(length: 100)]
-    #[Assert\NotBlank(message: 'The name is required.')]
-    #[Assert\Length(max: 100, maxMessage: 'The name cannot exceed {{ limit }} characters.')]
-    private ?string $name = null;
-
     #[ORM\Column(length: 64)]
-    private ?string $tokenHash = null;
-
-    /** The beginning of the token, shown in lists to tell the keys apart. */
-    #[ORM\Column(length: 16)]
-    private ?string $prefix = null;
+    private ?string $token = null;
 
     #[ORM\Column(length: 10)]
     #[Assert\NotBlank(message: 'The scope is required.')]
@@ -90,38 +83,14 @@ class ApiKey
         return $this;
     }
 
-    public function getName(): ?string
+    public function getToken(): ?string
     {
-        return $this->name;
+        return $this->token;
     }
 
-    public function setName(string $name): static
+    public function setToken(string $token): static
     {
-        $this->name = $name;
-
-        return $this;
-    }
-
-    public function getTokenHash(): ?string
-    {
-        return $this->tokenHash;
-    }
-
-    public function setTokenHash(string $tokenHash): static
-    {
-        $this->tokenHash = $tokenHash;
-
-        return $this;
-    }
-
-    public function getPrefix(): ?string
-    {
-        return $this->prefix;
-    }
-
-    public function setPrefix(string $prefix): static
-    {
-        $this->prefix = $prefix;
+        $this->token = $token;
 
         return $this;
     }
@@ -153,7 +122,7 @@ class ApiKey
         return $this->lastUsedAt;
     }
 
-    public function setLastUsedAt(\DateTimeImmutable $lastUsedAt): static
+    public function setLastUsedAt(?\DateTimeImmutable $lastUsedAt): static
     {
         $this->lastUsedAt = $lastUsedAt;
 

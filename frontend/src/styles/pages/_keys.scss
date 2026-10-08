@@ -1,0 +1,37 @@
+@use '../mixins';
+
+// The API key of a book: the token, always visible, and the way to replace it.
+.key-card {
+  gap: var(--space-4);
+  max-width: 40rem;
+
+  &__token {
+    display: flex;
+    gap: var(--space-3);
+
+    @include mixins.narrow {
+      flex-direction: column;
+    }
+  }
+
+  &__input {
+    flex: 1;
+    min-width: 0;
+    font-family: var(--font-mono, ui-monospace, 'Cascadia Code', Consolas, monospace);
+    font-size: var(--text-sm);
+  }
+
+  &__meta {
+    color: var(--text-faint);
+    font-size: var(--text-sm);
+  }
+
+  &__actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-3);
+    padding-top: var(--space-4);
+    border-top: 1px solid var(--border);
+  }
+}
