@@ -22,6 +22,7 @@ export default {
     timeline: 'Chronologie',
     keys: "Clé d'API",
     import: 'Import',
+    export: 'Export',
     logout: 'Se déconnecter',
     openMenu: 'Ouvrir le menu',
     closeMenu: 'Fermer le menu',
@@ -333,6 +334,38 @@ Fiches déjà présentes :
       title: 'Import terminé',
       text: '{created} élément(s) créé(s), {updated} mis à jour.',
       again: 'Nouvel import',
+    },
+  },
+
+  export: {
+    title: 'Export',
+    subtitle: 'Téléchargez tout le contenu de ce livre dans le format de votre choix.',
+    format: 'Format',
+    formats: {
+      json: {
+        name: 'JSON (Codex)',
+        text: 'Le format de Codex, identique à celui de l’import : il sert de sauvegarde et peut être réimporté tel quel.',
+      },
+      markdown: {
+        name: 'Markdown',
+        text: 'Un document lisible : la bibliothèque par type, puis la chronologie. Pratique à coller dans une IA, un wiki ou un éditeur de notes.',
+      },
+    },
+    secrets: 'Inclure les événements secrets',
+    secretsHint: 'Décochez pour ne pas révéler ce que le lecteur ne sait pas encore, par exemple avant de donner le document à une IA.',
+    counts: 'Fiches : {knowledge} · Événements : {events} · Liens : {links}',
+    download: 'Télécharger',
+    copied: 'Contenu copié.',
+    empty: {
+      title: 'Rien à exporter pour l’instant',
+      text: 'Ajoutez des fiches ou des événements, ou importez-en, puis revenez ici.',
+    },
+    md: {
+      library: 'Bibliothèque',
+      timeline: 'Chronologie',
+      id: 'identifiant : {id}',
+      participants: 'Participants :',
+      tags: 'Étiquettes :',
     },
   },
 

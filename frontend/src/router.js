@@ -24,6 +24,7 @@ const router = createRouter({
             { path: 'library', name: 'library', component: () => import('@/views/LibraryView.vue') },
             { path: 'timeline', name: 'timeline', component: () => import('@/views/TimelineView.vue') },
             { path: 'import', name: 'import', component: () => import('@/views/ImportView.vue') },
+            { path: 'export', name: 'export', component: () => import('@/views/ExportView.vue') },
             { path: 'keys', name: 'keys', component: () => import('@/views/KeysView.vue') },
           ],
         },

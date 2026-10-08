@@ -245,13 +245,13 @@ Décisions prises :
 
 **À savoir** : le header `X-API-Key` fait partie des en-têtes CORS autorisés, avec `allow_credentials` pour les cookies. Les clés d'API nécessitent un corps UTF-8 ; depuis un terminal Windows, `curl.exe` déforme les accents passés en argument (`-d`) : envoyer le corps depuis un fichier (`--data-binary @fichier.json`).
 
-### Étape 3 : application Vue (en cours)
+### Étape 3 : application Vue (terminée)
 
 **Décisions** : Vue 3 + Vite + Vue Router, en **JavaScript** (pas de TypeScript), **sans Pinia** (l'état partagé tient dans des composables), **sans bibliothèque de composants ni Tailwind** : les styles sont des fichiers SCSS compilés en **un seul fichier CSS**, avec un design épuré, un thème clair et un thème sombre. Tous les textes affichés sont dans un fichier par langue (français et anglais).
 
 **Fait** : projet et outillage, client d'API, connexion (avec redirection vers la page demandée, session qui survit au rechargement), liste des livres (créer, renommer, supprimer avec confirmation), coque de l'application (barre latérale, tiroir sur mobile), menu d'apparence (mode et couleur), notifications, **bibliothèque** (voir ci-dessous), **chronologie** (voir plus bas). **clé d'API** (une seule par livre, toujours affichée, avec copie et régénération après confirmation), **import** (voir plus bas).
 
-**Reste** : export (notre format et un format courant).
+**Reste** : rien pour l'étape 3.
 
 **Bibliothèque** (`views/LibraryView.vue`, `components/library/KnowledgePanel.vue`) :
 - **Liste** : toutes les fiches du livre (nom, type, alias, résumé), triées par nom, chargées d'un coup (par pages de 200 si besoin). La liste de l'API renvoie les alias pour permettre la recherche.
@@ -318,7 +318,14 @@ Format du document (les participants peuvent référencer des éléments du docu
 }
 ```
 
-Les champs facultatifs absents prennent leur valeur par défaut (`null`, `[]`, `revealed: true`) dans l'aperçu. **L'export** (notre format et un format courant) viendra ensuite.
+Les champs facultatifs absents prennent leur valeur par défaut (`null`, `[]`, `revealed: true`) dans l'aperçu.
+
+**Export** (`views/ExportView.vue`, `utils/exportDocument.js`) : une page pour télécharger ou copier tout le contenu d'un livre.
+- **Une seule route serveur**, `GET /api/books/{bookId}/export` (session ou clé de ce livre) : trois requêtes SQL qui renvoient toutes les fiches (avec description), tous les événements (avec détail) et tous les liens, dans la forme d'un document d'import. Les formats sont fabriqués dans le navigateur.
+- **JSON (Codex)** : le document tel quel, que l'import accepte à nouveau (sauvegarde, transfert vers un autre livre).
+- **Markdown** : un document lisible, la bibliothèque groupée par type puis la chronologie dans l'ordre du monde, avec identifiants, alias, participants (et leur rôle) et étiquettes. Les libellés suivent la langue de l'interface.
+- **Événements secrets** : une case (cochée par défaut) les retire, ainsi que leurs liens, pour ne pas révéler au lecteur ou à une IA ce qui n'est pas encore connu.
+- Un aperçu du fichier est affiché ; boutons « Télécharger » (fichier `nom-du-livre-date.json` ou `.md`) et « Copier ».
 
 ### Étape 4 : routes pour l'IA
 

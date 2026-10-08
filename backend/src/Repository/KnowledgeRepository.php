@@ -55,4 +55,21 @@ class KnowledgeRepository extends ServiceEntityRepository
             'aliases' => json_decode($row['aliases'], true, 512, JSON_THROW_ON_ERROR),
         ], $rows);
     }
+
+    /**
+     * Every entry of a book with all its fields, as plain arrays (no entity hydration), for the export.
+     * The slug is exposed as "id".
+     *
+     * @return list<array<string, mixed>>
+     */
+    public function exportRows(Book $book): array
+    {
+        return $this->createQueryBuilder('k')
+            ->select('k.slug AS id', 'k.type', 'k.name', 'k.summary', 'k.description', 'k.aliases')
+            ->andWhere('k.book = :book')->setParameter('book', $book)
+            ->orderBy('k.name')
+            ->addOrderBy('k.slug')
+            ->getQuery()
+            ->getArrayResult();
+    }
 }

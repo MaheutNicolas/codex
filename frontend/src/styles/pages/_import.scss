@@ -175,3 +175,26 @@
     flex: none;
   }
 }
+
+// The export page: options, a preview of the file, and the buttons to get it.
+.export {
+  &__card {
+    gap: var(--space-4);
+    max-width: 48rem;
+  }
+
+  &__counts {
+    color: var(--text-faint);
+    font-size: var(--text-sm);
+  }
+
+  &__preview {
+    max-height: 26rem;
+  }
+
+  &__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+  }
+}

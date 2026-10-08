@@ -22,6 +22,7 @@ export default {
     timeline: 'Timeline',
     keys: 'API key',
     import: 'Import',
+    export: 'Export',
     logout: 'Log out',
     openMenu: 'Open the menu',
     closeMenu: 'Close the menu',
@@ -332,6 +333,38 @@ Events already present:
       title: 'Import complete',
       text: '{created} item(s) created, {updated} updated.',
       again: 'New import',
+    },
+  },
+
+  export: {
+    title: 'Export',
+    subtitle: 'Download everything this book holds, in the format of your choice.',
+    format: 'Format',
+    formats: {
+      json: {
+        name: 'JSON (Codex)',
+        text: 'The Codex format, the same as the import: it works as a backup and can be imported again as is.',
+      },
+      markdown: {
+        name: 'Markdown',
+        text: 'A readable document: the library by type, then the timeline. Handy to paste into an AI, a wiki or a notes editor.',
+      },
+    },
+    secrets: 'Include secret events',
+    secretsHint: 'Untick so as not to reveal what the reader does not know yet, for instance before giving the document to an AI.',
+    counts: 'Entries: {knowledge} · Events: {events} · Links: {links}',
+    download: 'Download',
+    copied: 'Content copied.',
+    empty: {
+      title: 'Nothing to export yet',
+      text: 'Add entries or events, or import some, then come back here.',
+    },
+    md: {
+      library: 'Library',
+      timeline: 'Timeline',
+      id: 'identifier: {id}',
+      participants: 'Participants:',
+      tags: 'Tags:',
     },
   },
 

@@ -39,4 +39,21 @@ class EventRepository extends ServiceEntityRepository
 
         return $qb;
     }
+
+    /**
+     * Every event of a book with all its fields, in chronological order, as plain arrays (no entity
+     * hydration), for the export. The slug is exposed as "id".
+     *
+     * @return list<array<string, mixed>>
+     */
+    public function exportRows(Book $book): array
+    {
+        return $this->createQueryBuilder('e')
+            ->select('e.slug AS id', 'e.title', 'e.summary', 'e.detail', 'e.worldOrder', 'e.worldDate', 'e.chapter', 'e.revealed', 'e.tags')
+            ->andWhere('e.book = :book')->setParameter('book', $book)
+            ->orderBy('e.worldOrder')
+            ->addOrderBy('e.slug')
+            ->getQuery()
+            ->getArrayResult();
+    }
 }
