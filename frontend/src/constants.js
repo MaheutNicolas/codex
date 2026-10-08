@@ -61,3 +61,8 @@ export const RELATION_TYPES = [
 ]
 
 export const relationIcon = (value) => RELATION_TYPES.find((type) => type.value === value)?.icon ?? Link
+
+// Must match Relation::ENTRY_TYPES in the backend: only the entries that act in the story can have relations.
+// A place, an item or a concept is tied to the story by the events it takes part in.
+export const RELATION_ENTRY_TYPES = ['character', 'group', 'species']
+export const canHaveRelations = (type) => RELATION_ENTRY_TYPES.includes(type)

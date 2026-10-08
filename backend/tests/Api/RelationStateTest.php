@@ -79,7 +79,7 @@ final class RelationStateTest extends ApiTestCase
 
         self::assertSame('Aldric serves North Citadel.', $items['citadel']['statement']);
         self::assertSame('outgoing', $items['citadel']['direction']);
-        self::assertSame('place', $items['citadel']['with']['type']);
+        self::assertSame('group', $items['citadel']['with']['type']);
         unset($byPartner);
     }
 
@@ -202,7 +202,7 @@ final class RelationStateTest extends ApiTestCase
         self::assertSame('relation', $citadel['source']);
         self::assertSame(0, $citadel['sharedEvents']);
         self::assertNull($citadel['firstChapter']);
-        self::assertSame('place', $citadel['type']);
+        self::assertSame('group', $citadel['type']);
     }
 
     public function testTheRelatedTotalCountsEachEntryOnce(): void

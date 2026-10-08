@@ -7,7 +7,7 @@ import UiButton from '@/components/ui/UiButton.vue'
 import UiSelect from '@/components/ui/UiSelect.vue'
 import * as knowledgeApi from '@/api/knowledge'
 import * as relationsApi from '@/api/relations'
-import { RELATION_TYPES, relationIcon } from '@/constants'
+import { RELATION_TYPES, canHaveRelations, relationIcon } from '@/constants'
 import { useToast } from '@/composables/useToast'
 import { errorMessage, t, tn } from '@/locales'
 import { compareNames } from '@/utils/format'
@@ -77,9 +77,13 @@ const sentence = (relation) =>
 const chapterLabel = (relation) =>
   relation.chapter === null ? t('relations.fromStart') : t('relations.chapter', { number: relation.chapter })
 
+// An entry that cannot have relations, but has some from before the rule, stays listed so that they can be found.
+const inRelations = computed(() => new Set(relations.value.flatMap((relation) => [relation.sourceId, relation.targetId])))
+
 const characterOptions = computed(() => [
   { value: '', label: t('relations.allCharacters') },
-  ...[...lexicon.value]
+  ...lexicon.value
+    .filter((entry) => canHaveRelations(entry.type) || inRelations.value.has(entry.id))
     .sort((a, b) => compareNames(a.name, b.name))
     .map((entry) => ({ value: entry.id, label: entry.name })),
 ])

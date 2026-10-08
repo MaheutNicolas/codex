@@ -17,7 +17,8 @@ use Doctrine\ORM\EntityManagerInterface;
 /**
  * Business logic of the relations between entries. The relation of two entries is a list of states, one per
  * chapter (see Relation); the API says null for a state that holds "from the start of the book" (stored as 0).
- * Returns plain arrays, ready to be sent as JSON.
+ * Only the types of entries listed in Relation::ENTRY_TYPES can be in a relation. Returns plain arrays, ready to be
+ * sent as JSON.
  */
 final class RelationService
 {
@@ -129,12 +130,21 @@ final class RelationService
      */
     private function apply(Relation $relation, Book $book, array $data): void
     {
+        // The type of an entry is only checked when the request names it: a relation that was made before this rule
+        // (with a place, say) can still be edited, moved to other entries, or deleted.
+        $wrongType = [];
         foreach (['sourceId' => 'setSource', 'targetId' => 'setTarget'] as $field => $setter) {
             if (\array_key_exists($field, $data)) {
                 $entry = $this->knowledge->findBySlug($book, $data[$field])
                     ?? throw new ApiException(ErrorCode::REFERENCE_NOT_FOUND, ['field' => $field, 'id' => $data[$field]]);
+                if (!\in_array($entry->getType(), Relation::ENTRY_TYPES, true)) {
+                    $wrongType[$field] = [\sprintf('Only these types of entries can have relations: %s.', implode(', ', Relation::ENTRY_TYPES))];
+                }
                 $relation->$setter($entry);
             }
+        }
+        if ([] !== $wrongType) {
+            throw new ApiException(ErrorCode::VALIDATION_FAILED, ['fields' => $wrongType]);
         }
 
         if (\array_key_exists('chapter', $data)) {

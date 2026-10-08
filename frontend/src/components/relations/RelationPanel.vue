@@ -6,7 +6,7 @@ import UiDialog from '@/components/ui/UiDialog.vue'
 import UiField from '@/components/ui/UiField.vue'
 import UiSelect from '@/components/ui/UiSelect.vue'
 import * as relationsApi from '@/api/relations'
-import { RELATION_TYPES } from '@/constants'
+import { RELATION_TYPES, canHaveRelations } from '@/constants'
 import { useToast } from '@/composables/useToast'
 import { errorMessage, t } from '@/locales'
 import { pairKey } from '@/utils/relations'
@@ -48,9 +48,14 @@ function blank(source = props.defaultSource, target = props.defaultTarget) {
   return { id: props.nextId, sourceId: source, targetId: target, type: 'ally', chapter: '', revealed: true, note: '' }
 }
 
+// Only the entries that can have relations are offered; one that is already chosen stays in the list (a relation
+// made before this rule can involve another type), so that it still shows.
 const entryOptions = computed(() => [
   { value: '', label: t('relations.form.pick') },
-  ...[...props.lexicon].sort((a, b) => a.name.localeCompare(b.name)).map((entry) => ({ value: entry.id, label: entry.name })),
+  ...[...props.lexicon]
+    .filter((entry) => canHaveRelations(entry.type) || entry.id === form.sourceId || entry.id === form.targetId)
+    .sort((a, b) => a.name.localeCompare(b.name))
+    .map((entry) => ({ value: entry.id, label: `${entry.name} · ${t(`library.types.${entry.type}`)}` })),
 ])
 const typeOptions = computed(() => RELATION_TYPES.map(({ value }) => ({ value, label: t(`relations.types.${value}`) })))
 
@@ -197,7 +202,9 @@ function showSaveError(error) {
     return
   }
   // The API reports each faulty field; its messages are in English, so only the first one is shown as is.
-  for (const [field, messages] of Object.entries(error.details?.fields ?? {})) errors[field] = messages[0]
+  for (const [field, messages] of Object.entries(error.details?.fields ?? {})) {
+    errors[field] = messages[0].startsWith('Only these types') ? t('relations.form.errors.entryType') : messages[0]
+  }
   toast.error(errorMessage(error))
 }
 
@@ -252,6 +259,8 @@ function discard() {
         </UiButton>
         <UiSelect v-model="form.targetId" :label="t('relations.form.target')" :options="entryOptions" :error="errors.targetId" />
       </div>
+
+      <p class="c-field__hint">{{ t('relations.form.entriesHint') }}</p>
 
       <UiSelect
         v-model="form.type"

@@ -22,6 +22,12 @@ use Symfony\Component\Validator\Constraints as Assert;
 #[ORM\HasLifecycleCallbacks]
 class Relation
 {
+    /**
+     * The types of entries that can be in a relation: the ones that act in the story. A place, an item or a concept
+     * is linked to the story by the events it takes part in. (Existing relations with other types stay readable.)
+     */
+    public const ENTRY_TYPES = ['character', 'group', 'species'];
+
     /** A relation that goes both ways. */
     public const SYMMETRIC_TYPES = ['ally', 'enemy', 'rival', 'friend', 'family', 'partner', 'other', 'none'];
 

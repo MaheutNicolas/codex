@@ -228,7 +228,7 @@ export default {
 
   relations: {
     title: 'Relations',
-    subtitle: 'How the links between entries evolve: each line is a state of the relation from a chapter on.',
+    subtitle: 'How the links between characters, groups and species evolve: each line is a state of the relation from a chapter on.',
     new: 'New relation',
     character: 'Entry',
     allCharacters: 'All entries',
@@ -290,6 +290,7 @@ export default {
       pick: 'Choose an entry…',
       type: 'Relation',
       typeHint: 'For "mentor", "parent", "member of", "leader of" and "serves", the first entry is the one that is the mentor, parent, member… of the second.',
+      entriesHint: 'Only characters, groups and species can have relations. A place or an item is tied to the story by its events.',
       swap: 'Swap the two entries',
       preview: 'Preview',
       chapter: 'From chapter',
@@ -308,6 +309,7 @@ export default {
         sourceRequired: 'Choose the first entry.',
         targetRequired: 'Choose the second entry.',
         sameEntry: 'Choose two different entries.',
+        entryType: 'Only characters, groups and species can have relations.',
         typeRequired: 'Choose a type of relation.',
         chapterInvalid: 'Enter a chapter number (1 or more), or leave empty.',
         noteTooLong: 'The note cannot exceed 500 characters.',
@@ -410,7 +412,7 @@ Rules:
 - "chapter": number of the chapter where the reader discovers the event (a whole number, 1 or more), or null if it is not told.
 - "revealed": false if the reader does not know yet what happened.
 - "participants" links an event to an entry ("eventId" and "knowledgeId" are "id" values), with a short "role" (author, victim, witness, place…) or null.
-- "relations": the state of the relation between two entries ("sourceId" and "targetId" are the "id" of two different entries) from a chapter on. "type": one of {relationTypes}. "chapter": the chapter from which this state holds (a whole number, 1 or more), or null if it holds from the start of the book. "revealed": false for a relation the reader does not know yet (hidden alliance, secret kinship). "note": a nuance in one sentence, or null.
+- "relations": the state of the relation between two entries ("sourceId" and "targetId" are the "id" of two different entries of type "character", "group" or "species" only: a place, an item or a concept is tied to the story by its events) from a chapter on. "type": one of {relationTypes}. "chapter": the chapter from which this state holds (a whole number, 1 or more), or null if it holds from the start of the book. "revealed": false for a relation the reader does not know yet (hidden alliance, secret kinship). "note": a nuance in one sentence, or null.
 - When a relation CHANGES, do not edit its existing state: add a new state at the chapter where it changes (allies from the start, then enemies from chapter 6). To end it, add a state of type "none". A pair has only one state per chapter, in either direction.
 - The types "mentor", "parent", "member_of", "leader_of" and "serves" have a direction: "sourceId" is the mentor, parent, member, leader or servant of "targetId". The other types have none; "other" is explained in the note.
 - Use null when a piece of information is unknown. Do not invent anything.
@@ -479,6 +481,7 @@ Relations already present:
       relationType: 'Unknown type of relation. Possible types: {types}.',
       pairDuplicate: 'This pair has several states at the same chapter in the import.',
       pairExists: 'These two entries already have a state at this chapter in the book ({existing}).',
+      relationEntryType: 'Only these types of entries can have relations: {types}.',
       duplicate: 'This item appears several times in the import.',
     },
     server: {

@@ -229,7 +229,7 @@ export default {
 
   relations: {
     title: 'Relations',
-    subtitle: "L'évolution des liens entre les fiches : chaque ligne est un état de la relation à partir d'un chapitre.",
+    subtitle: "L'évolution des liens entre personnages, groupes et espèces : chaque ligne est un état de la relation à partir d'un chapitre.",
     new: 'Nouvelle relation',
     character: 'Fiche',
     allCharacters: 'Toutes les fiches',
@@ -291,6 +291,7 @@ export default {
       pick: 'Choisir une fiche…',
       type: 'Relation',
       typeHint: 'Pour « mentor », « parent », « membre de », « chef de » et « au service de », la première fiche est celle qui est mentor, parent, membre… de la seconde.',
+      entriesHint: "Seuls les personnages, les groupes et les espèces peuvent avoir des relations. Un lieu ou un objet se rattache à l'histoire par les événements.",
       swap: 'Inverser les deux fiches',
       preview: 'Aperçu',
       chapter: 'À partir du chapitre',
@@ -309,6 +310,7 @@ export default {
         sourceRequired: 'Choisissez la première fiche.',
         targetRequired: 'Choisissez la seconde fiche.',
         sameEntry: 'Choisissez deux fiches différentes.',
+        entryType: 'Seuls les personnages, les groupes et les espèces peuvent avoir des relations.',
         typeRequired: 'Choisissez un type de relation.',
         chapterInvalid: 'Saisissez un numéro de chapitre (1 ou plus), ou laissez vide.',
         noteTooLong: 'La note ne peut pas dépasser 500 caractères.',
@@ -411,7 +413,7 @@ Règles :
 - "chapter" : numéro du chapitre où le lecteur découvre l'événement (entier, 1 ou plus), ou null s'il n'est pas raconté.
 - "revealed" : false si le lecteur ne sait pas encore ce qui s'est passé.
 - "participants" relie un événement à une fiche ("eventId" et "knowledgeId" sont des "id"), avec un "role" court (author, victim, witness, place…) ou null.
-- "relations" : l'état de la relation entre deux fiches ("sourceId" et "targetId" sont les "id" de deux fiches différentes) à partir d'un chapitre. "type" : un parmi {relationTypes}. "chapter" : le chapitre à partir duquel cet état tient (entier, 1 ou plus), ou null s'il tient dès le début du livre. "revealed" : false pour une relation que le lecteur ne connaît pas encore (alliance cachée, parenté secrète). "note" : une nuance en une phrase, ou null.
+- "relations" : l'état de la relation entre deux fiches ("sourceId" et "targetId" sont les "id" de deux fiches différentes, de type "character", "group" ou "species" uniquement : un lieu, un objet ou un concept se rattache à l'histoire par les événements) à partir d'un chapitre. "type" : un parmi {relationTypes}. "chapter" : le chapitre à partir duquel cet état tient (entier, 1 ou plus), ou null s'il tient dès le début du livre. "revealed" : false pour une relation que le lecteur ne connaît pas encore (alliance cachée, parenté secrète). "note" : une nuance en une phrase, ou null.
 - Quand une relation CHANGE, ne modifie pas son état existant : ajoute un nouvel état au chapitre où elle change (alliés dès le début, puis ennemis au chapitre 6). Pour y mettre fin, ajoute un état de type "none". Un couple n'a qu'un seul état par chapitre, dans un sens ou dans l'autre.
 - Les types "mentor", "parent", "member_of", "leader_of" et "serves" ont un sens : "sourceId" est le mentor, le parent, le membre, le chef ou le serviteur de "targetId". Les autres types n'en ont pas ; "other" se précise dans la note.
 - Utilise null quand une information est inconnue. N'invente rien.
@@ -480,6 +482,7 @@ Relations déjà présentes :
       relationType: 'Type de relation inconnu. Types possibles : {types}.',
       pairDuplicate: 'Ce couple a plusieurs états au même chapitre dans l’import.',
       pairExists: 'Ces deux fiches ont déjà un état à ce chapitre dans le livre ({existing}).',
+      relationEntryType: 'Seuls ces types de fiches peuvent avoir des relations : {types}.',
       duplicate: 'Cet élément apparaît plusieurs fois dans l’import.',
     },
     server: {

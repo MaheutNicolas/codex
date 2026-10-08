@@ -214,7 +214,7 @@ abstract class ApiTestCase extends WebTestCase
                 ['id' => 'corvin', 'type' => 'character', 'name' => 'Corvin', 'summary' => 's'],
                 ['id' => 'zed', 'type' => 'character', 'name' => 'Zed', 'summary' => 's'],
                 ['id' => 'loner', 'type' => 'character', 'name' => 'Loner', 'summary' => 's'],
-                ['id' => 'citadel', 'type' => 'place', 'name' => 'North Citadel', 'summary' => 's'],
+                ['id' => 'citadel', 'type' => 'group', 'name' => 'North Citadel', 'summary' => 's'],
             ],
             'events' => [
                 ['id' => 'e1', 'title' => 'One', 'summary' => 's', 'worldOrder' => 1, 'chapter' => 1],

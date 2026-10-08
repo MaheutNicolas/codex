@@ -8,7 +8,7 @@ import UiField from '@/components/ui/UiField.vue'
 import UiSelect from '@/components/ui/UiSelect.vue'
 import UiTagInput from '@/components/ui/UiTagInput.vue'
 import * as knowledgeApi from '@/api/knowledge'
-import { KNOWLEDGE_TYPES } from '@/constants'
+import { KNOWLEDGE_TYPES, canHaveRelations } from '@/constants'
 import { useToast } from '@/composables/useToast'
 import { errorMessage, t } from '@/locales'
 import { SLUG_PATTERN, slugify } from '@/utils/text'
@@ -268,7 +268,7 @@ function discard() {
 
     <template #footer>
       <UiButton
-        v-if="!isCreate"
+        v-if="!isCreate && canHaveRelations(form.type)"
         variant="ghost"
         :disabled="dirty"
         :title="dirty ? t('library.form.viewRelationsSave') : undefined"

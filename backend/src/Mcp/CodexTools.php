@@ -94,9 +94,10 @@ final class CodexTools
 
     /**
      * Reads the relations of one entry (allies, enemies, mentors, members of a group...) as they stand at the chapter
-     * reached: for each other entry, the current type, a sentence naming both entries (so that the direction is
-     * clear), the chapter it has held since (null: since the start of the book) and a note. The most recently
-     * changed come first. Relations change over the story: with withHistory, each one also lists all its states in
+     * reached. Only characters, groups and species have relations (a place or an item is linked to the story by its
+     * events: use timeline with its id). For each other entry it gives the current type, a sentence naming both
+     * entries (so that the direction is clear), the chapter it has held since (null: since the start of the book) and
+     * a note. The most recently changed come first. Relations change over the story: with withHistory, each one also lists all its states in
      * order (for example allies from the start, enemies from chapter 6, no longer linked from chapter 9), and the
      * pairs that are no longer linked are listed too, marked "ended".
      *
@@ -124,7 +125,8 @@ final class CodexTools
     }
 
     /**
-     * Looks up how TWO entries stand with each other: use it before writing a scene with two characters. It gives
+     * Looks up how TWO entries stand with each other: use it before writing a scene with two characters (only
+     * characters, groups and species have relations; for anything else the answer lists the shared events only). It gives
      * the "status" of the pair ("linked", "ended" when they used to be linked, or "none"), the current "relation"
      * (type, a sentence naming both, the chapter it has held since, a note), the "history" of the pair (every state
      * in order, e.g. allies from the start, enemies from chapter 6, no longer linked from chapter 9), and the events

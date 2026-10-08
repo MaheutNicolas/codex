@@ -140,8 +140,17 @@ function contextFor(list) {
     [...existingRelations.value.values()].map((relation) => [relationPairKey(relation), relation.id]),
   )
 
+  // The type of every entry the import can refer to, to check who can have a relation.
+  const knowledgeTypes = new Map([
+    ...[...existingKnowledge.value.values()].map((entry) => [entry.id, entry.type]),
+    ...included
+      .filter((item) => item.section === 'knowledge' && typeof item.data.id === 'string')
+      .map((item) => [item.data.id, item.data.type]),
+  ])
+
   return {
     relationPairs,
+    knowledgeTypes,
     availableKnowledge: idsOf('knowledge', existingKnowledge.value),
     availableEvents: idsOf('events', existingEvents.value),
     duplicates: new Set([...counts].filter(([, count]) => count > 1).map(([key]) => key)),

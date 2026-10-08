@@ -2,6 +2,7 @@
 
 namespace App\Tests\Api;
 
+use App\Entity\Knowledge;
 use App\Entity\Relation;
 use App\Tests\ApiTestCase;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -23,7 +24,7 @@ final class RelationTest extends ApiTestCase
             ['id' => 'aldric', 'type' => 'character', 'name' => 'Aldric', 'summary' => 's'],
             ['id' => 'mira', 'type' => 'character', 'name' => 'Mira', 'summary' => 's'],
             ['id' => 'corvin', 'type' => 'character', 'name' => 'Corvin', 'summary' => 's'],
-            ['id' => 'citadel', 'type' => 'place', 'name' => 'North Citadel', 'summary' => 's'],
+            ['id' => 'citadel', 'type' => 'group', 'name' => 'North Citadel', 'summary' => 's'],
         ]]);
     }
 
@@ -187,6 +188,103 @@ final class RelationTest extends ApiTestCase
     {
         $this->assertError(400, 'VALIDATION_FAILED', $this->api('POST', $this->url(), $this->state('rel-1', 'aldric', 'mira', 'ally', null, ['note' => str_repeat('x', 501)])));
         self::assertSame(201, $this->api('POST', $this->url(), $this->state('rel-2', 'aldric', 'mira', 'ally', null, ['note' => str_repeat('x', 500)]))['status']);
+    }
+
+    // ---- Which entries can have relations ---------------------------------------------------------
+
+    /** @return iterable<string, array{string, bool}> the type of an entry, and whether it can have relations */
+    public static function entryTypes(): iterable
+    {
+        foreach (Knowledge::TYPES as $type) {
+            yield $type => [$type, \in_array($type, Relation::ENTRY_TYPES, true)];
+        }
+    }
+
+    public function testOnlyCharactersGroupsAndSpeciesCanHaveRelations(): void
+    {
+        self::assertSame(['character', 'group', 'species'], Relation::ENTRY_TYPES);
+    }
+
+    #[DataProvider('entryTypes')]
+    public function testTheTypeOfBothEntriesIsChecked(string $type, bool $allowed): void
+    {
+        $this->api('POST', "/api/books/{$this->bookId}/knowledge", ['id' => 'other', 'type' => $type, 'name' => 'Other', 'summary' => 's']);
+
+        // Aldric is a character: the other entry may be on either side.
+        $asTarget = $this->api('POST', $this->url(), $this->state('rel-1', 'aldric', 'other'));
+        $asSource = $this->api('POST', $this->url(), $this->state('rel-2', 'other', 'aldric'));
+
+        if ($allowed) {
+            self::assertSame(201, $asTarget['status']);
+            // The type was accepted on both sides: the second state is only refused because the pair already has one.
+            $this->assertError(409, 'RELATION_ALREADY_EXISTS', $asSource);
+        } else {
+            $this->assertError(400, 'VALIDATION_FAILED', $asTarget);
+            self::assertArrayHasKey('targetId', $asTarget['data']['error']['details']['fields']);
+            $this->assertError(400, 'VALIDATION_FAILED', $asSource);
+            self::assertArrayHasKey('sourceId', $asSource['data']['error']['details']['fields']);
+        }
+    }
+
+    public function testTheMessageListsTheTypesThatCanHaveRelations(): void
+    {
+        $this->api('POST', "/api/books/{$this->bookId}/knowledge", ['id' => 'the-tower', 'type' => 'place', 'name' => 'The Tower', 'summary' => 's']);
+        $response = $this->api('POST', $this->url(), $this->state('rel-1', 'aldric', 'the-tower'));
+
+        $this->assertError(400, 'VALIDATION_FAILED', $response);
+        self::assertSame(
+            'Only these types of entries can have relations: character, group, species.',
+            $response['data']['error']['details']['fields']['targetId'][0],
+        );
+    }
+
+    public function testBothEntriesAreReportedAtOnce(): void
+    {
+        $this->api('POST', "/api/books/{$this->bookId}/knowledge", ['id' => 'the-tower', 'type' => 'place', 'name' => 'The Tower', 'summary' => 's']);
+        $this->api('POST', "/api/books/{$this->bookId}/knowledge", ['id' => 'the-sword', 'type' => 'item', 'name' => 'The Sword', 'summary' => 's']);
+
+        $response = $this->api('POST', $this->url(), $this->state('rel-1', 'the-tower', 'the-sword', 'other'));
+
+        self::assertEqualsCanonicalizing(['sourceId', 'targetId'], array_keys($response['data']['error']['details']['fields']));
+    }
+
+    public function testARelationMadeWithAnotherTypeBeforeTheRuleCanStillBeEditedAndRemoved(): void
+    {
+        $this->api('POST', $this->url(), $this->state('rel-1', 'aldric', 'citadel', 'serves', 3));
+        // The entry becomes a place afterwards, which is how such a relation could exist.
+        $this->connection()->executeStatement("UPDATE knowledge SET type = 'place' WHERE slug = 'citadel'");
+
+        self::assertSame(1, $this->api('GET', $this->url())['data']['total'], 'It is still listed.');
+        self::assertSame(200, $this->api('PATCH', $this->url('/rel-1'), ['note' => 'Still here.'])['status'], 'Its other fields can be edited.');
+        self::assertSame(200, $this->api('PATCH', $this->url('/rel-1'), ['chapter' => 4, 'type' => 'other'])['status']);
+
+        // But it cannot be moved to a place...
+        $this->assertError(400, 'VALIDATION_FAILED', $this->api('PATCH', $this->url('/rel-1'), ['targetId' => 'citadel']));
+        // ...and it can be removed.
+        self::assertSame(204, $this->api('DELETE', $this->url('/rel-1'))['status']);
+    }
+
+    public function testAnImportWithARelationOnAPlaceIsRefused(): void
+    {
+        $document = [
+            'knowledge' => [['id' => 'the-tower', 'type' => 'place', 'name' => 'The Tower', 'summary' => 's']],
+            'relations' => [$this->state('rel-1', 'aldric', 'mira'), $this->state('rel-2', 'aldric', 'the-tower', 'other')],
+        ];
+
+        $response = $this->api('POST', "/api/books/{$this->bookId}/import", $document);
+
+        $this->assertError(400, 'VALIDATION_FAILED', $response);
+        self::assertSame('relations[1]', $response['data']['error']['details']['path']);
+        self::assertSame(0, $this->api('GET', $this->url())['data']['total'], 'The good relation was not kept either.');
+        $this->assertError(404, 'KNOWLEDGE_NOT_FOUND', $this->api('GET', "/api/books/{$this->bookId}/knowledge/the-tower"));
+    }
+
+    public function testTheEntriesWithoutRelationsStillShowTheirEventsAndAnEmptyRelationList(): void
+    {
+        $this->api('POST', "/api/books/{$this->bookId}/knowledge", ['id' => 'the-tower', 'type' => 'place', 'name' => 'The Tower', 'summary' => 's']);
+
+        self::assertSame([], $this->api('GET', "/api/books/{$this->bookId}/knowledge/the-tower/relations")['data']['data']);
+        self::assertSame('none', $this->api('GET', "/api/books/{$this->bookId}/knowledge/the-tower/relations/aldric")['data']['status']);
     }
 
     // ---- One state per pair and chapter -----------------------------------------------------------

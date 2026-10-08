@@ -1,4 +1,4 @@
-import { KNOWLEDGE_TYPES, RELATION_TYPES } from '@/constants'
+import { KNOWLEDGE_TYPES, RELATION_ENTRY_TYPES, RELATION_TYPES } from '@/constants'
 import { t } from '@/locales'
 import { SLUG_PATTERN } from '@/utils/text'
 
@@ -165,6 +165,11 @@ export function validateItem(item, context) {
     for (const field of ['sourceId', 'targetId']) {
       required(field, 100)
       if (!errors[field] && !context.availableKnowledge.has(data[field])) fail(field, 'unknownKnowledge')
+      // Only the entries that act in the story have relations; the type is known for an entry of the book or of the import.
+      const entryType = context.knowledgeTypes?.get(data[field])
+      if (!errors[field] && entryType && !RELATION_ENTRY_TYPES.includes(entryType)) {
+        fail(field, 'relationEntryType', { types: RELATION_ENTRY_TYPES.map((type) => t(`library.types.${type}`)).join(', ') })
+      }
     }
     if (!errors.sourceId && !errors.targetId && data.sourceId === data.targetId) fail('targetId', 'sameEntry')
     required('type', 20)
